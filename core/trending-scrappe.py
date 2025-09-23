@@ -30,7 +30,6 @@ def login(driver):
     time.sleep(3)
     driver.find_element(By.NAME, "text").send_keys(LOGIN_USERNAME, Keys.RETURN)
     time.sleep(3)
-    # Si pide teléfono/email
     try:
         phone_input = driver.find_element(By.NAME, "text")
         if phone_input:
@@ -41,55 +40,7 @@ def login(driver):
     driver.find_element(By.NAME, "password").send_keys(LOGIN_PASSWORD, Keys.RETURN)
     time.sleep(5)
 
-def get_trending_topics(driver, max_scrolls=10, limit=None):
-    """Extrae los nombres de tendencias desde la sección de tendencias"""
-    driver.get("https://x.com/explore/tabs/trending")
-    time.sleep(5)
-
-    last_height = driver.execute_script("return document.body.scrollHeight")
-    scrolls = 0
-    seen = set()
-    trends = []
-
-    while scrolls < max_scrolls:
-        trend_elems = driver.find_elements(By.XPATH, '//div[@data-testid="trend"]')
-        print(f"[trends] encontrados {len(trend_elems)} elementos (scroll {scrolls})")
-
-        for te in trend_elems:
-            try:
-                # Buscar específicamente el texto principal de la tendencia (blanco)
-                name_elem = te.find_element(
-                    By.XPATH,
-                    './/div[@dir="ltr" and contains(@style, "rgb(231, 233, 234)")]//span'
-                )
-                trend_name = name_elem.text.strip()
-
-                if trend_name and trend_name not in seen:
-                    seen.add(trend_name)
-                    trends.append(trend_name)
-                    print(f"[trends] agregado: {trend_name}")
-
-                    if limit and len(trends) >= limit:
-                        print(f"[trends] alcanzado límite {limit}")
-                        return trends
-            except:
-                continue
-
-        # Scroll para cargar más tendencias
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(random.uniform(2, 4))
-        new_height = driver.execute_script("return document.body.scrollHeight")
-        if new_height == last_height:
-            print("[trends] no hay más contenido para cargar.")
-            break
-        last_height = new_height
-        scrolls += 1
-
-    print(f"[trends] retornando {len(trends)} tendencias")
-    return trends
-
 def parse_count_text(text):
-    """Parsea counts tipo '1.2k', '3M', '7 163', etc -> int"""
     if not text:
         return 0
     text = text.strip().lower().replace("\u202f", "").replace("\xa0", "").replace(",", "")
@@ -103,7 +54,6 @@ def parse_count_text(text):
         return 0
 
 def safe_get_count(art, testid):
-    """Devuelve el número de métricas (like, retweet, reply) o 0 si no existe"""
     try:
         elem = art.find_element(
             By.XPATH,
@@ -115,7 +65,6 @@ def safe_get_count(art, testid):
         return 0
 
 def safe_get_views(art):
-    """Devuelve el número de vistas de un tweet"""
     try:
         elem = art.find_element(
             By.XPATH,
@@ -126,78 +75,76 @@ def safe_get_views(art):
     except:
         return 0
 
-def scrape_trending(driver, trend_limit=10, per_trend_scrolls=8):
-    """
-    Para cada tendencia encontrada, busca en X los posts y devuelve lista de posts con campo 'trend'.
-    """
-    topics = get_trending_topics(driver, max_scrolls=trend_limit)
-    all_posts = []
+def scrape_trend(driver, topic, per_trend_scrolls=8):
+    print(f"\n[search] Scrapeando tendencia: {topic}")
+    q = quote_plus(topic)
+    search_url = f"https://x.com/search?q={q}&src=trend_click"
+    driver.get(search_url)
+    time.sleep(4)
 
-    for topic in topics:
-        print(f"\n[search] Scrapeando tendencia: {topic}")
-        q = quote_plus(topic)
-        search_url = f"https://x.com/search?q={q}&src=trend_click"
-        driver.get(search_url)
-        time.sleep(4)  # esperar a que cargue resultados
+    last_height = driver.execute_script("return document.body.scrollHeight")
+    scrolls = 0
+    seen = set()
+    posts = []
 
-        last_height = driver.execute_script("return document.body.scrollHeight")
-        scrolls = 0
-        seen = set()
+    while scrolls < per_trend_scrolls:
+        tweet_articles = driver.find_elements(By.XPATH, '//article[@data-testid="tweet"]')
+        print(f"  Scroll {scrolls+1}: {len(tweet_articles)} artículos encontrados")
+        for art in tweet_articles:
+            try:
+                text_elem = art.find_element(By.XPATH, './/div[@data-testid="tweetText"]')
+                tweet_text = text_elem.text
+            except:
+                tweet_text = ""
+            try:
+                date_elem = art.find_element(By.XPATH, './/time')
+                tweet_date = date_elem.get_attribute("datetime")
+            except:
+                tweet_date = ""
 
-        while scrolls < per_trend_scrolls:
-            tweet_articles = driver.find_elements(By.XPATH, '//article[@data-testid="tweet"]')
-            print(f"  Scroll {scrolls+1}: {len(tweet_articles)} artículos encontrados")
-            for art in tweet_articles:
-                try:
-                    text_elem = art.find_element(By.XPATH, './/div[@data-testid="tweetText"]')
-                    tweet_text = text_elem.text
-                except:
-                    tweet_text = ""
-                try:
-                    date_elem = art.find_element(By.XPATH, './/time')
-                    tweet_date = date_elem.get_attribute("datetime")
-                except:
-                    tweet_date = ""
+            likes = safe_get_count(art, "like")
+            retweets = safe_get_count(art, "retweet")
+            replies = safe_get_count(art, "reply")
+            views = safe_get_views(art)
 
-                likes = safe_get_count(art, "like")
-                retweets = safe_get_count(art, "retweet")
-                replies = safe_get_count(art, "reply")
-                views = safe_get_views(art)
+            tweet_id = (tweet_text + tweet_date)[:200]
+            if tweet_id in seen or not tweet_text:
+                continue
+            seen.add(tweet_id)
 
-                tweet_id = (tweet_text + tweet_date)[:200]  # pequeño id
-                if tweet_id in seen or not tweet_text:
-                    continue
-                seen.add(tweet_id)
+            posts.append({
+                "trend": topic,
+                "text": tweet_text,
+                "likes": likes,
+                "retweets": retweets,
+                "replies": replies,
+                "views": views,
+                "created_at": tweet_date
+            })
 
-                all_posts.append({
-                    "trend": topic,
-                    "text": tweet_text,
-                    "likes": likes,
-                    "retweets": retweets,
-                    "replies": replies,
-                    "views": views,
-                    "created_at": tweet_date
-                })
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        time.sleep(random.uniform(2, 4))
+        new_height = driver.execute_script("return document.body.scrollHeight")
+        if new_height == last_height:
+            print("  No hay más contenido en esta búsqueda.")
+            break
+        last_height = new_height
+        scrolls += 1
 
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(random.uniform(2, 4))
-            new_height = driver.execute_script("return document.body.scrollHeight")
-            if new_height == last_height:
-                print("  No hay más contenido en esta búsqueda.")
-                break
-            last_height = new_height
-            scrolls += 1
-
-        print(f"  -> posts recolectados para '{topic}': {len([p for p in all_posts if p['trend']==topic])}")
-
-    print(f"Total posts extraídos de todas las tendencias: {len(all_posts)}")
-    return all_posts
+    print(f"  -> posts recolectados para '{topic}': {len(posts)}")
+    return posts
 
 if __name__ == "__main__":
+    # 🚀 Pedir tendencia por consola
+    trend = input("Insertar tendencia: ").strip()
+    if not trend:
+        print("No ingresaste ninguna tendencia.")
+        exit(1)
+
     driver = setup_driver()
     login(driver)
     try:
-        posts = scrape_trending(driver, trend_limit=10, per_trend_scrolls=6)
+        posts = scrape_trend(driver, trend, per_trend_scrolls=6)
     except Exception as e:
         print(f"Error durante scraping: {e}")
         posts = []
