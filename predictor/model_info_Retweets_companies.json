@@ -1,0 +1,35 @@
+{
+  "features": [
+    "has_offer",
+    "text_length",
+    "day",
+    "month",
+    "year",
+    "hour",
+    "is_golden_hour",
+    "has_trend",
+    "has_image",
+    "is_weekend",
+    "weekday",
+    "Company_balanz",
+    "Company_brubank",
+    "Company_cocos",
+    "Company_supervielle",
+    "Company_top10",
+    "Company_uala"
+  ],
+  "companies": [
+    "balanz",
+    "brubank",
+    "cocos",
+    "supervielle",
+    "top10",
+    "uala"
+  ],
+  "target": "Retweets",
+  "model_performance": {
+    "mse": 37885.7421875,
+    "r2": -0.022348880767822266,
+    "rmse": 194.64260116300338
+  }
+}
