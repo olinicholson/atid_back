@@ -13,13 +13,12 @@ LOGIN_USERNAME = "negribaci"
 LOGIN_PASSWORD = "holaManola1"
 PHONE_NUMBER = "3878689688"
 
-OUTPUT_CSV = "posts_galicia.csv"   # archivo
+OUTPUT_CSV = "posts_visa.csv"   # archivo
 SCROLL_PAUSE = 2.0
 MAX_SCROLLS = 500  # ajusta según lo que quieras scrapear
 # -------------
 
-# cuentas : brubankarg, uala_arg, BalanzCapital, cocoscap, Supervielle_ARG, BancoGalicia, VisaArgentina, BcoHipotecario, 
-# Banco_Patagonia, mercadopago, Banza_AR, lemonapp_ar
+# cuentas : VisaArgentina, BcoHipotecario, Banco_Patagonia, mercadopago, Banza_AR, lemonapp_ar
 
 def setup_driver():
     options = webdriver.ChromeOptions()
