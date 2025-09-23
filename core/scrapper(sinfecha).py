@@ -42,40 +42,9 @@ def login(driver):
     driver.find_element(By.NAME, "password").send_keys(LOGIN_PASSWORD, Keys.RETURN)
     time.sleep(5)
 
-def get_followers_count(driver, username):
-    """Devuelve la cantidad de seguidores de una cuenta (abonnés)"""
-    try:
-        driver.get(f"https://x.com/{username}")
-        time.sleep(5)
-
-        # Buscar el número en el link de seguidores (verified_followers)
-        elem = driver.find_element(
-            By.XPATH,
-            f'//a[contains(@href,"/{username}/verified_followers")]//span[contains(@class,"css-1jxf684")]'
-        )
-        text = elem.text.strip()
-
-        # Normalizar el texto (ej: "21,6 k" → 21600)
-        text = text.replace("\u202f", "").replace("\xa0", "").replace(" ", "")
-        text = text.lower()
-
-        if "k" in text:
-            return int(float(text.replace("k", "").replace(",", ".").strip()) * 1000)
-        if "m" in text:
-            return int(float(text.replace("m", "").replace(",", ".").strip()) * 1000000)
-
-        return int(text.replace(",", "").replace(".", ""))
-    except Exception as e:
-        print(f"Error obteniendo seguidores de {username}: {e}")
-        return 0
-
 def scrape_posts(driver, username):
     driver.get(f"https://x.com/{username}")
-    time.sleep(10)
-
-    # obtener cantidad de seguidores
-    followers_count = get_followers_count(driver, username)
-
+    time.sleep(10)  # Espera mayor para carga inicial
     last_height = driver.execute_script("return document.body.scrollHeight")
     scrolls = 0
     posts = []
@@ -94,20 +63,17 @@ def scrape_posts(driver, username):
                 tweet_date = date_elem.get_attribute("datetime")
             except:
                 tweet_date = ""
-
+            # Extraer métricas (likes, retweets, replies, views)
             likes = safe_get_count(art, "like")
             retweets = safe_get_count(art, "retweet")
             replies = safe_get_count(art, "reply")
             views = safe_get_views(art)
-
             tweet_id = tweet_text + tweet_date
             if tweet_id in seen or not tweet_text:
                 continue
             seen.add(tweet_id)
-
             posts.append({
                 "username": username,
-                "followers": followers_count,   # 👈 nuevo campo
                 "text": tweet_text,
                 "likes": likes,
                 "retweets": retweets,
@@ -116,6 +82,7 @@ def scrape_posts(driver, username):
                 "created_at": tweet_date
             })
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        # Espera aleatoria entre 2 y 5 segundos
         time.sleep(random.uniform(2, 5))
         new_height = driver.execute_script("return document.body.scrollHeight")
         if new_height == last_height:
@@ -175,7 +142,7 @@ if __name__ == "__main__":
 
     if posts:
         df_new = pd.DataFrame(posts)
-        cols = ["username", "text", "likes", "retweets", "replies", "views", "followers", "created_at"]
+        cols = ["username", "text", "likes", "retweets", "replies", "views", "created_at"]
         df_new = df_new[cols]
 
         # Si ya existe el archivo, append sin sobrescribir
