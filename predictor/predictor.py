@@ -9,6 +9,7 @@ from sklearn.inspection import permutation_importance
 from xgboost import XGBRegressor
 from sentence_transformers import SentenceTransformer
 from sklearn.decomposition import PCA
+from textblob import TextBlob
 
 # ------------------------
 # 1. Cargar datos clusterizados
@@ -31,6 +32,7 @@ def load_clustered_data():
 # ------------------------
 # 2. Feature engineering
 # ------------------------
+
 def feature_engineering(df):
     df["created_at"] = pd.to_datetime(df["created_at"], errors="coerce")
     df["year"] = df["created_at"].dt.year
@@ -42,13 +44,14 @@ def feature_engineering(df):
     df["is_golden_hour"] = df["hour"].isin([8,9,10,18,19,20]).astype(int)
     df["text_length"] = df["text"].astype(str).str.len()
 
+    # Keywords
     offer_keywords = ['descuento','oferta','promoción','gratis','regalo','%','promo']
     trend_keywords = ['trending','viral','#','nuevo','lanzamiento']
     df["has_offer"] = df["text"].astype(str).str.lower().str.contains("|".join(offer_keywords), na=False).astype(int)
     df["has_trend"] = df["text"].astype(str).str.lower().str.contains("|".join(trend_keywords), na=False).astype(int)
     df["has_image"] = df["text"].astype(str).str.contains("pic.twitter.com|instagram.com|imgur.com", na=False).astype(int)
-    
-    # Followers mapping (proxy de audiencia) - DEBE ir antes del engagement_rate
+
+    # Followers mapping
     followers_mapping = {
         'uala': 190500,
         'naranjax': 190300,
@@ -60,25 +63,49 @@ def feature_engineering(df):
     df['followers_count'] = df['company'].map(followers_mapping).fillna(50000)
     df['followers_log'] = np.log1p(df['followers_count'])
     df['high_followers'] = (df['followers_count'] > 100000).astype(int)
+
+    # Engagement proxy
     df["likes_over_rt"] = df["Likes"] / (df["Retweets"]+1)
-    # Calcular engagement rate después de tener followers_count
     df["engagement_rate"] = ((df["Retweets"] + df["Likes"] + df["Reply_count"]) / df["followers_count"]).fillna(0)
+
+    # 🔹 Nueva feature: sentimiento del texto
+    def get_sentiment(text):
+        try:
+            blob = TextBlob(str(text))
+            return blob.sentiment.polarity
+        except:
+            return 0
+    df["sentiment_polarity"] = df["text"].apply(get_sentiment)
+    df["is_payday"] = df["day"].isin([28,29,30,31,1,2,3,4,5]).astype(int)
+
+
+    # Agregar fecha como columna separada para los merges
+    df["date_only"] = df["created_at"].dt.date
     
-    # Ordenar por fecha para cálculos temporales
+    posts_per_day_company = df.groupby(["company", "date_only"])["text"].count().reset_index(name="company_posts_day")
+    posts_per_day_total = df.groupby("date_only")["text"].count().reset_index(name="total_posts_day")
+
+    df = df.merge(posts_per_day_company, how="left", on=["company", "date_only"])
+    df = df.merge(posts_per_day_total, how="left", on="date_only")
+
+    df["competencia_same_day"] = (df["total_posts_day"] - df["company_posts_day"]).fillna(0)
+
+    # Limpiar columnas temporales
+    df = df.drop(columns=["date_only"], errors="ignore")
+
+    # Temporal features
     df = df.sort_values("created_at")
     df["days_since_last_post"] = df.groupby("company")["created_at"].diff().dt.days.fillna(0)
-    
-    # Calcular posts en los últimos 7 días
+
     def count_posts_last_7d(group):
         group_sorted = group.sort_values("created_at")
         posts_7d = []
         for i, current_date in enumerate(group_sorted["created_at"]):
-            # Contar posts en los últimos 7 días (incluyendo el actual)
             cutoff_date = current_date - pd.Timedelta(days=7)
             count = sum(group_sorted["created_at"][:i+1] >= cutoff_date)
             posts_7d.append(count)
         return pd.Series(posts_7d, index=group_sorted.index)
-    
+
     df["posts_last_7d"] = df.groupby("company").apply(count_posts_last_7d).values
 
     if "content_cluster" in df.columns:
@@ -355,50 +382,6 @@ if rt_importance is not None:
             top_in_category = rt_importance[rt_importance['feature'].isin(cat_features_in_model)].head(3)
             for _, row in top_in_category.iterrows():
                 print(f"    - {row['feature']}: {row['importance_mean']:.4f}")
-
-# ------------------------
-# VARIANZA EXPLICADA
-# ------------------------
-print("\n📈 VARIANZA EXPLICADA POR GRUPOS DE VARIABLES")
-print("="*60)
-
-def calculate_group_variance_explained(model, X_test, y_test, feature_groups):
-    """Calcula cuánta varianza explica cada grupo de variables"""
-    baseline_score = r2_score(y_test, model.predict(X_test))
-    
-    results = {}
-    for group_name, group_features in feature_groups.items():
-        # Crear dataset sin este grupo de características
-        features_without_group = [f for f in X_test.columns if f not in group_features]
-        if len(features_without_group) > 0:
-            X_without_group = X_test[features_without_group]
-            try:
-                # Reentrenar modelo sin este grupo (aproximación rápida)
-                score_without_group = r2_score(y_test, model.predict(X_without_group))
-                contribution = baseline_score - score_without_group
-                results[group_name] = {
-                    'contribution': contribution,
-                    'percentage': contribution / baseline_score * 100 if baseline_score > 0 else 0
-                }
-            except:
-                results[group_name] = {'contribution': 0, 'percentage': 0}
-    
-    return results
-
-# Calcular para el modelo de views (más estable)
-try:
-    variance_results = calculate_group_variance_explained(model_view, X_test, Y_test_view, feature_categories)
-    
-    print("Contribución de cada grupo a la varianza explicada (Views):")
-    sorted_results = sorted(variance_results.items(), key=lambda x: x[1]['contribution'], reverse=True)
-    
-    for group_name, results in sorted_results:
-        print(f"  {group_name}: {results['contribution']:.4f} ({results['percentage']:.1f}% del R²)")
-        
-except Exception as e:
-    print(f"Error en cálculo de varianza explicada: {e}")
-
-print("\n" + "="*60)
 
 
 # ------------------------
