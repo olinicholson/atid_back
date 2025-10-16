@@ -1,0 +1,87 @@
+{
+  "files_count": 11,
+  "rows": 7609,
+  "missing_trend_similarity_total": 0,
+  "zeros_total": 7590,
+  "ones_total": 19,
+  "percent_ones": 0.24970429754238405,
+  "per_file": [
+    {
+      "file": "posts_balanz_with_trends.csv",
+      "rows": 428,
+      "zeros": 426,
+      "ones": 2,
+      "missing_col": false
+    },
+    {
+      "file": "posts_balanz_with_trends_with_trends.csv",
+      "rows": 428,
+      "zeros": 426,
+      "ones": 2,
+      "missing_col": false
+    },
+    {
+      "file": "posts_balanz_with_trends_with_trends_with_trends.csv",
+      "rows": 428,
+      "zeros": 426,
+      "ones": 2,
+      "missing_col": false
+    },
+    {
+      "file": "posts_balanz_with_trends_with_trends_with_trends_with_trends.csv",
+      "rows": 428,
+      "zeros": 426,
+      "ones": 2,
+      "missing_col": false
+    },
+    {
+      "file": "posts_balanz_with_trends_with_trends_with_trends_with_trends_with_trends.csv",
+      "rows": 428,
+      "zeros": 426,
+      "ones": 2,
+      "missing_col": false
+    },
+    {
+      "file": "posts_brubank_with_trends.csv",
+      "rows": 167,
+      "zeros": 167,
+      "ones": 0,
+      "missing_col": false
+    },
+    {
+      "file": "posts_cocos_with_trends.csv",
+      "rows": 390,
+      "zeros": 389,
+      "ones": 1,
+      "missing_col": false
+    },
+    {
+      "file": "posts_galicia_with_trends.csv",
+      "rows": 411,
+      "zeros": 411,
+      "ones": 0,
+      "missing_col": false
+    },
+    {
+      "file": "posts_supervielle_with_trends.csv",
+      "rows": 364,
+      "zeros": 362,
+      "ones": 2,
+      "missing_col": false
+    },
+    {
+      "file": "posts_top10_with_trends.csv",
+      "rows": 3652,
+      "zeros": 3646,
+      "ones": 6,
+      "missing_col": false
+    },
+    {
+      "file": "posts_uala_with_trends.csv",
+      "rows": 485,
+      "zeros": 485,
+      "ones": 0,
+      "missing_col": false
+    }
+  ]
+}

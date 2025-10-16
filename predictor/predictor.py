@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import os, joblib, json
+import os, joblib, json, glob
 from sklearn.metrics import mean_squared_error, r2_score, accuracy_score, f1_score, explained_variance_score
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.ensemble import HistGradientBoostingRegressor
@@ -16,9 +16,44 @@ from textblob import TextBlob
 # ------------------------
 def load_clustered_data():
     current_dir = os.path.dirname(os.path.abspath(__file__))
+    # Prefer precomputed files in core/data that already include trend similarity
+    repo_root = os.path.dirname(current_dir)
+    data_dir = os.path.join(repo_root, 'core', 'data')
+    trend_files = glob.glob(os.path.join(data_dir, 'posts_*with_trends*.csv')) + glob.glob(os.path.join(data_dir, 'posts_*_with_trends*.csv'))
+    if trend_files:
+        # Load and concatenate available per-company CSVs (they already include created_at, company, and trend_similarity)
+        dfs = []
+        for f in sorted(trend_files):
+            try:
+                dfs.append(pd.read_csv(f))
+            except Exception:
+                continue
+        if dfs:
+            df = pd.concat(dfs, ignore_index=True)
+            print(f"Datos cargados desde core/data: {len(df)} posts desde {len(dfs)} archivos")
+            # Ensure company column exists (some files may have username)
+            if 'company' not in df.columns and 'username' in df.columns:
+                df['company'] = df['username'].str.lower()
+            # Normalize column names to expected format (capitalized targets)
+            col_map = {}
+            if 'likes' in df.columns:
+                col_map['likes'] = 'Likes'
+            if 'retweets' in df.columns:
+                col_map['retweets'] = 'Retweets'
+            if 'replies' in df.columns:
+                col_map['replies'] = 'Reply_count'
+            if 'views' in df.columns:
+                col_map['views'] = 'View_count'
+            if 'created_at' in df.columns and 'created_at' not in df.columns:
+                pass
+            if col_map:
+                df = df.rename(columns=col_map)
+            return df
+
+    # Fallback: single combined file in repo root
     clustered_file = os.path.join(os.path.dirname(current_dir), "posts_with_clusters.csv")
     if not os.path.exists(clustered_file):
-        raise FileNotFoundError(f"No se encontró {clustered_file}. Ejecuta primero cluster_posts.py")
+        raise FileNotFoundError(f"No se encontró {clustered_file}. Ejecuta primero cluster_posts.py o coloca archivos en core/data")
     df = pd.read_csv(clustered_file)
     print(f"Datos cargados: {len(df)} posts con clusters")
     df = df.rename(columns={
@@ -63,6 +98,12 @@ def feature_engineering(df):
     df['followers_count'] = df['company'].map(followers_mapping).fillna(50000)
     df['followers_log'] = np.log1p(df['followers_count'])
     df['high_followers'] = (df['followers_count'] > 100000).astype(int)
+
+    # Trend similarity: if present in the dataset (from core/data _with_trends files), use it; otherwise default 0
+    if 'trend_similarity' in df.columns:
+        df['trend_similarity'] = pd.to_numeric(df['trend_similarity'], errors='coerce').fillna(0.0)
+    else:
+        df['trend_similarity'] = 0.0
 
     # Engagement proxy
     df["likes_over_rt"] = df["Likes"] / (df["Retweets"]+1)
@@ -121,21 +162,33 @@ def add_top10_dynamic_context(df, window_days=30):
     df = df.dropna(subset=["created_at"])
     df["created_at"] = df["created_at"].dt.tz_convert(None)
     df = df.sort_values("created_at").reset_index(drop=True)
+    # If there is no 'content_cluster' or no 'top10' company rows, return early with empty context
+    if 'content_cluster' not in df.columns or 'company' not in df.columns:
+        return df.fillna(0), []
 
     top10 = df[df["company"] == "top10"].copy().sort_values("created_at")
+    if top10.empty:
+        return df.fillna(0), []
+
     top10["top10_rt_roll"] = top10["Retweets"].rolling(window=window_days, min_periods=1).mean()
 
-    for cluster_id in sorted(df["content_cluster"].dropna().unique()):
+    # Only iterate cluster ids that exist in top10 (avoid KeyError)
+    cluster_ids = []
+    if 'content_cluster' in top10.columns:
+        cluster_ids = sorted(top10["content_cluster"].dropna().unique())
+
+    for cluster_id in cluster_ids:
         mask = top10["content_cluster"] == cluster_id
         col = f"top10_cluster_{cluster_id}_roll"
         top10.loc[mask, col] = top10.loc[mask, "Retweets"].rolling(window=window_days, min_periods=1).mean()
 
     context_cols = ["top10_rt_roll"] + [c for c in top10.columns if "top10_cluster_" in c]
-    df = pd.merge_asof(
-        df.sort_values("created_at"),
-        top10[["created_at"] + context_cols].sort_values("created_at"),
-        on="created_at", direction="backward"
-    )
+    if context_cols:
+        df = pd.merge_asof(
+            df.sort_values("created_at"),
+            top10[["created_at"] + context_cols].sort_values("created_at"),
+            on="created_at", direction="backward"
+        )
     return df.fillna(0), context_cols
 
 # ------------------------
@@ -224,7 +277,9 @@ cluster_cols = [c for c in tweets_df.columns if c.startswith("Cluster_")]
 features = [
     "has_offer","text_length","day","month","year","hour",
     "is_golden_hour","has_trend","has_image","is_weekend","weekday",
-    "followers_count","followers_log","high_followers"
+    "followers_count","followers_log","high_followers",
+    # include trend similarity score as a numeric feature
+    "trend_similarity"
 ] + cluster_cols + embedding_cols + context_cols
 
 # ------------------------
