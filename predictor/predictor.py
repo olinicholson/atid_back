@@ -7,6 +7,7 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.linear_model import LogisticRegression
 from sklearn.inspection import permutation_importance
 from xgboost import XGBRegressor
+from catboost import CatBoostRegressor, CatBoostClassifier
 from sentence_transformers import SentenceTransformer
 from sklearn.decomposition import PCA
 from textblob import TextBlob
@@ -150,7 +151,8 @@ def feature_engineering(df):
     df["posts_last_7d"] = df.groupby("company").apply(count_posts_last_7d).values
 
     if "content_cluster" in df.columns:
-        df = pd.concat([df, pd.get_dummies(df["content_cluster"], prefix="Cluster")], axis=1)
+        # No usamos get_dummies, CatBoost manejará las categóricas nativamente
+        df["content_cluster"] = df["content_cluster"].astype(str)
 
     return df.fillna(0)
 
@@ -272,43 +274,111 @@ Y = tweets_df[Y_cols]
 tweets_df, context_cols = add_top10_dynamic_context(tweets_df, window_days=7)
 tweets_df, embedding_cols = add_embeddings(tweets_df, n_components=5)
 
-# Features
-cluster_cols = [c for c in tweets_df.columns if c.startswith("Cluster_")]
-features = [
-    "has_offer","text_length","day","month","year","hour",
-    "is_golden_hour","has_trend","has_image","is_weekend","weekday",
+# Features - Separamos categóricas y numéricas para CatBoost
+categorical_features = ["company", "weekday", "month", "hour"]
+if "content_cluster" in tweets_df.columns:
+    categorical_features.append("content_cluster")
+
+# Convertir categóricas a string para CatBoost
+for cat_col in categorical_features:
+    if cat_col in tweets_df.columns:
+        tweets_df[cat_col] = tweets_df[cat_col].astype(str)
+
+# Lista de features numéricas
+numeric_features = [
+    "has_offer","text_length","day","year",
+    "is_golden_hour","has_trend","has_image","is_weekend",
     "followers_count","followers_log","high_followers",
-    # include trend similarity score as a numeric feature
-    "trend_similarity"
-] + cluster_cols + embedding_cols + context_cols
+    "trend_similarity","sentiment_polarity","is_payday",
+    "company_posts_day","total_posts_day","competencia_same_day",
+    "days_since_last_post","posts_last_7d","likes_over_rt","engagement_rate"
+] + embedding_cols + context_cols
+
+# Todas las features (categóricas + numéricas)
+features = categorical_features + numeric_features
+# Filtrar solo las que existen en el dataframe
+features = [f for f in features if f in tweets_df.columns]
+categorical_features = [f for f in categorical_features if f in tweets_df.columns]
 
 # ------------------------
-# MODELOS HÍBRIDOS
+# MODELOS HÍBRIDOS CON CATBOOST
 # ------------------------
 train_df, test_df = temporal_split(tweets_df)
 X_train, X_test = train_df[features], test_df[features]
 
-# A. Retweets + Likes (multi-output)
-Y_train_rt_likes = np.log1p(train_df[["Retweets_norm_clipped","Likes_norm_clipped"]])
-Y_test_rt_likes = np.log1p(test_df[["Retweets_norm_clipped","Likes_norm_clipped"]])
-model_rt_likes = MultiOutputRegressor(
-    XGBRegressor(n_estimators=1000, learning_rate=0.05, max_depth=10,
-                 subsample=0.8, colsample_bytree=0.8, random_state=42)
-).fit(X_train, Y_train_rt_likes)
+# Obtener índices de las columnas categóricas
+cat_features_idx = [features.index(f) for f in categorical_features if f in features]
 
-# B. View_count
+print(f"\n🔧 Usando {len(categorical_features)} features categóricas: {categorical_features}")
+print(f"📊 Total de features: {len(features)}")
+
+# A. Retweets (CatBoost)
+Y_train_rt = np.log1p(train_df["Retweets_norm_clipped"])
+Y_test_rt = np.log1p(test_df["Retweets_norm_clipped"])
+model_retweets = CatBoostRegressor(
+    iterations=1000,
+    learning_rate=0.05,
+    depth=8,
+    l2_leaf_reg=3,
+    cat_features=cat_features_idx,
+    random_state=42,
+    verbose=100,
+    early_stopping_rounds=50
+)
+model_retweets.fit(X_train, Y_train_rt, eval_set=(X_test, Y_test_rt), plot=False)
+
+# B. Likes (CatBoost)
+Y_train_likes = np.log1p(train_df["Likes_norm_clipped"])
+Y_test_likes = np.log1p(test_df["Likes_norm_clipped"])
+model_likes = CatBoostRegressor(
+    iterations=1000,
+    learning_rate=0.05,
+    depth=8,
+    l2_leaf_reg=3,
+    cat_features=cat_features_idx,
+    random_state=42,
+    verbose=100,
+    early_stopping_rounds=50
+)
+model_likes.fit(X_train, Y_train_likes, eval_set=(X_test, Y_test_likes), plot=False)
+
+# C. View_count (CatBoost)
 Y_train_view = np.log1p(train_df["View_count_norm_clipped"])
 Y_test_view = np.log1p(test_df["View_count_norm_clipped"])
-model_view = HistGradientBoostingRegressor(max_iter=500, random_state=42).fit(X_train, Y_train_view)
+model_view = CatBoostRegressor(
+    iterations=800,
+    learning_rate=0.05,
+    depth=6,
+    cat_features=cat_features_idx,
+    random_state=42,
+    verbose=100,
+    early_stopping_rounds=50
+)
+model_view.fit(X_train, Y_train_view, eval_set=(X_test, Y_test_view), plot=False)
 
-# C. Reply_count
+# D. Reply_count (CatBoost Classifier + Regressor)
 y_train_reply_bin = (train_df["Reply_count_norm_clipped"] > 0).astype(int)
 y_test_reply_bin = (test_df["Reply_count_norm_clipped"] > 0).astype(int)
-clf_reply = LogisticRegression(max_iter=500).fit(X_train, y_train_reply_bin)
+clf_reply = CatBoostClassifier(
+    iterations=500,
+    depth=6,
+    cat_features=cat_features_idx,
+    random_state=42,
+    verbose=100,
+    early_stopping_rounds=50
+)
+clf_reply.fit(X_train, y_train_reply_bin, eval_set=(X_test, y_test_reply_bin), plot=False)
 
+# Regressor para respuestas positivas
 mask_train_reply = y_train_reply_bin == 1
-model_reply_reg = XGBRegressor(n_estimators=600, learning_rate=0.05, max_depth=6,
-                               subsample=0.8, colsample_bytree=0.8, random_state=42)
+model_reply_reg = CatBoostRegressor(
+    iterations=600,
+    learning_rate=0.05,
+    depth=6,
+    cat_features=cat_features_idx,
+    random_state=42,
+    verbose=100
+)
 if mask_train_reply.sum() > 0:
     model_reply_reg.fit(X_train[mask_train_reply],
                         np.log1p(train_df.loc[mask_train_reply,"Reply_count_norm_clipped"]))
@@ -316,15 +386,21 @@ if mask_train_reply.sum() > 0:
 # ------------------------
 # Evaluación
 # ------------------------
-print("\n📊 Evaluación híbrida:")
+print("\n📊 Evaluación con CatBoost:")
 
-# Retweets + Likes
-Y_pred_rt_likes = model_rt_likes.predict(X_test)
-for i, col in enumerate(["Retweets","Likes"]):
-    mse = mean_squared_error(Y_test_rt_likes.iloc[:, i], Y_pred_rt_likes[:, i])
-    rmse = np.sqrt(mse)
-    r2 = r2_score(Y_test_rt_likes.iloc[:, i], Y_pred_rt_likes[:, i])
-    print(f"{col}: MSE={mse:.2f} RMSE={rmse:.2f} R²={r2:.2f}")
+# Retweets
+Y_pred_rt = model_retweets.predict(X_test)
+mse_rt = mean_squared_error(Y_test_rt, Y_pred_rt)
+rmse_rt = np.sqrt(mse_rt)
+r2_rt = r2_score(Y_test_rt, Y_pred_rt)
+print(f"Retweets: MSE={mse_rt:.2f} RMSE={rmse_rt:.2f} R²={r2_rt:.2f}")
+
+# Likes
+Y_pred_likes = model_likes.predict(X_test)
+mse_likes = mean_squared_error(Y_test_likes, Y_pred_likes)
+rmse_likes = np.sqrt(mse_likes)
+r2_likes = r2_score(Y_test_likes, Y_pred_likes)
+print(f"Likes: MSE={mse_likes:.2f} RMSE={rmse_likes:.2f} R²={r2_likes:.2f}")
 
 # View_count
 Y_pred_view = model_view.predict(X_test)
@@ -386,24 +462,28 @@ def analyze_feature_importance(model, X_test, y_test, model_name, features_list)
 # Analizar cada modelo
 print("\n🧠 MODELOS INDIVIDUALES:")
 
-# 1. Modelo de Retweets + Likes (tomamos el primer estimador para Retweets)
-if hasattr(model_rt_likes, 'estimators_'):
-    rt_model = model_rt_likes.estimators_[0]  # Retweets
-    rt_importance = analyze_feature_importance(
-        rt_model, X_test, Y_test_rt_likes.iloc[:, 0], 
-        "RETWEETS", features
-    )
-
-# 2. Modelo de Views
-view_importance = analyze_feature_importance(
-    model_view, X_test, Y_test_view,
-    "VIEW COUNT", features
+# 1. Modelo de Retweets
+rt_importance = analyze_feature_importance(
+    model_retweets, X_test, Y_test_rt, 
+    "RETWEETS (CatBoost)", features
 )
 
-# 3. Modelo de Reply Classification
+# 2. Modelo de Likes
+likes_importance = analyze_feature_importance(
+    model_likes, X_test, Y_test_likes,
+    "LIKES (CatBoost)", features
+)
+
+# 3. Modelo de Views
+view_importance = analyze_feature_importance(
+    model_view, X_test, Y_test_view,
+    "VIEW COUNT (CatBoost)", features
+)
+
+# 4. Modelo de Reply Classification
 reply_clf_importance = analyze_feature_importance(
     clf_reply, X_test, y_test_reply_bin,
-    "REPLY COUNT (Clasificación)", features
+    "REPLY COUNT - Clasificación (CatBoost)", features
 )
 
 # ------------------------
@@ -438,14 +518,18 @@ if rt_importance is not None:
             for _, row in top_in_category.iterrows():
                 print(f"    - {row['feature']}: {row['importance_mean']:.4f}")
 
-
 # ------------------------
 # Guardar modelos
 # ------------------------
 joblib.dump({
-    "rt_likes": model_rt_likes,
+    "retweets": model_retweets,
+    "likes": model_likes,
     "view": model_view,
     "reply_clf": clf_reply,
     "reply_reg": model_reply_reg,
-    "features": features
-}, "hybrid_models.pkl")
+    "features": features,
+    "categorical_features": categorical_features,
+    "cat_features_idx": cat_features_idx
+}, "hybrid_models_catboost.pkl")
+
+print(f"\n✅ Modelos guardados en 'hybrid_models_catboost.pkl'")

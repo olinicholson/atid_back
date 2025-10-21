@@ -1,44 +1,51 @@
 {
-  "files_count": 11,
-  "rows": 7609,
+  "files_count": 16,
+  "rows": 9369,
   "missing_trend_similarity_total": 0,
-  "zeros_total": 7590,
-  "ones_total": 19,
-  "percent_ones": 0.24970429754238405,
+  "zeros_total": 9363,
+  "ones_total": 6,
+  "percent_ones": 0.06404098623118795,
   "per_file": [
     {
       "file": "posts_balanz_with_trends.csv",
       "rows": 428,
-      "zeros": 426,
-      "ones": 2,
+      "zeros": 428,
+      "ones": 0,
       "missing_col": false
     },
     {
       "file": "posts_balanz_with_trends_with_trends.csv",
       "rows": 428,
-      "zeros": 426,
-      "ones": 2,
+      "zeros": 428,
+      "ones": 0,
       "missing_col": false
     },
     {
       "file": "posts_balanz_with_trends_with_trends_with_trends.csv",
       "rows": 428,
-      "zeros": 426,
-      "ones": 2,
+      "zeros": 428,
+      "ones": 0,
       "missing_col": false
     },
     {
       "file": "posts_balanz_with_trends_with_trends_with_trends_with_trends.csv",
       "rows": 428,
-      "zeros": 426,
-      "ones": 2,
+      "zeros": 428,
+      "ones": 0,
       "missing_col": false
     },
     {
       "file": "posts_balanz_with_trends_with_trends_with_trends_with_trends_with_trends.csv",
       "rows": 428,
-      "zeros": 426,
-      "ones": 2,
+      "zeros": 428,
+      "ones": 0,
+      "missing_col": false
+    },
+    {
+      "file": "posts_balanz_with_trends_with_trends_with_trends_with_trends_with_trends_with_trends.csv",
+      "rows": 428,
+      "zeros": 428,
+      "ones": 0,
       "missing_col": false
     },
     {
@@ -49,10 +56,24 @@
       "missing_col": false
     },
     {
+      "file": "posts_brubank_with_trends_with_trends.csv",
+      "rows": 167,
+      "zeros": 167,
+      "ones": 0,
+      "missing_col": false
+    },
+    {
       "file": "posts_cocos_with_trends.csv",
       "rows": 390,
-      "zeros": 389,
-      "ones": 1,
+      "zeros": 390,
+      "ones": 0,
+      "missing_col": false
+    },
+    {
+      "file": "posts_cocos_with_trends_with_trends.csv",
+      "rows": 390,
+      "zeros": 390,
+      "ones": 0,
       "missing_col": false
     },
     {
@@ -63,10 +84,24 @@
       "missing_col": false
     },
     {
+      "file": "posts_galicia_with_trends_with_trends.csv",
+      "rows": 411,
+      "zeros": 411,
+      "ones": 0,
+      "missing_col": false
+    },
+    {
       "file": "posts_supervielle_with_trends.csv",
       "rows": 364,
-      "zeros": 362,
-      "ones": 2,
+      "zeros": 364,
+      "ones": 0,
+      "missing_col": false
+    },
+    {
+      "file": "posts_supervielle_with_trends_with_trends.csv",
+      "rows": 364,
+      "zeros": 364,
+      "ones": 0,
       "missing_col": false
     },
     {
