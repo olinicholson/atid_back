@@ -12,13 +12,24 @@ from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegress
 from features_sociales import generar_features_sociales
 from features_competencia import generar_features_competencia
 import pickle
+import random
 
 warnings.filterwarnings("ignore")
+
+# Fijar seeds para reproducibilidad
+SEED = 42
+random.seed(SEED)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed(SEED)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 # ============================== CONFIG ==============================
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "core", "data")
 TARGETS = ["likes", "replies", "views"]
-QUANTILES = [0.01, 0.5, 0.99]
+QUANTILES = [0.01, 0.5, 0.99]  # 98% teórico
 N_Q = len(QUANTILES)
 
 SEQ_LEN = 8
@@ -35,7 +46,7 @@ os.makedirs(MODEL_DIR, exist_ok=True)
 
 # ============================== ARQUITECTURA LSTM ==============================
 class QuantileLSTM(nn.Module):
-    def __init__(self, input_dim, hidden=256, num_targets=1, dropout=0.3):
+    def __init__(self, input_dim, hidden=512, num_targets=1, dropout=0.3):
         super().__init__()
         self.lstm = nn.LSTM(input_dim, hidden, batch_first=True, dropout=dropout)
         self.heads = nn.ModuleList([
@@ -55,7 +66,8 @@ class QuantileLSTM(nn.Module):
 # ============================== LOSS CON PESOS Y COVERAGE ==============================
 def quantile_loss_with_coverage(preds, target, quantiles, alpha=0.5, weights=None):
     """
-    Pérdida cuantil con pesos para picos + penalización de coverage
+    Pérdida cuantil con pesos para picos + penalización de coverage suave
+    alpha=0.5: Prioriza MAE sobre coverage (configuración original)
     """
     losses = []
     for i, q in enumerate(quantiles):
@@ -67,7 +79,7 @@ def quantile_loss_with_coverage(preds, target, quantiles, alpha=0.5, weights=Non
     
     base_loss = torch.mean(torch.stack(losses))
     
-    # Penalización de coverage
+    # Penalización de coverage suave (no forzar coverage alto)
     q_low = preds[:, :, 0]
     q_high = preds[:, :, -1]
     coverage = torch.mean(((target >= q_low) & (target <= q_high)).float())
@@ -126,12 +138,45 @@ def run_pipeline():
 
     print(f"✅ Registros Ualá: {len(df)}")
 
-    # ===== FEATURES =====
+    # ===== FEATURES TEMPORALES =====
     df["month_sin"] = np.sin(2 * np.pi * df["created_at"].dt.month / 12)
     df["month_cos"] = np.cos(2 * np.pi * df["created_at"].dt.month / 12)
     df["hour"] = df["created_at"].dt.hour
     df["weekday"] = df["created_at"].dt.weekday
     df["is_weekend"] = (df["weekday"] >= 5).astype(int)
+    
+    # Features de horario (binning por franjas)
+    df["hour_sin"] = np.sin(2 * np.pi * df["hour"] / 24)
+    df["hour_cos"] = np.cos(2 * np.pi * df["hour"] / 24)
+    df["is_morning"] = ((df["hour"] >= 6) & (df["hour"] < 12)).astype(int)  # 6-12
+    df["is_afternoon"] = ((df["hour"] >= 12) & (df["hour"] < 18)).astype(int)  # 12-18
+    df["is_evening"] = ((df["hour"] >= 18) & (df["hour"] < 22)).astype(int)  # 18-22
+    df["is_night"] = ((df["hour"] >= 22) | (df["hour"] < 6)).astype(int)  # 22-6
+    
+    # Feriados Argentina (2024-2025)
+    feriados_arg = [
+        "2024-01-01", "2024-02-12", "2024-02-13",  # Año Nuevo, Carnaval
+        "2024-03-24", "2024-03-28", "2024-03-29",  # Memoria, Semana Santa
+        "2024-04-02", "2024-05-01", "2024-05-25",  # Malvinas, Trabajador, Revolución
+        "2024-06-17", "2024-06-20", "2024-07-09",  # Güemes, Bandera, Independencia
+        "2024-08-17", "2024-10-12", "2024-11-18",  # San Martín, Diversidad, Soberanía
+        "2024-12-08", "2024-12-25",  # Inmaculada, Navidad
+        "2025-01-01", "2025-03-03", "2025-03-04",  # Año Nuevo, Carnaval
+        "2025-03-24", "2025-04-02", "2025-04-17", "2025-04-18",  # Memoria, Malvinas, Semana Santa
+        "2025-05-01", "2025-05-25", "2025-06-16", "2025-06-20",  # Trabajador, Revolución, Güemes, Bandera
+        "2025-07-09", "2025-08-17", "2025-10-12", "2025-11-24",  # Independencia, San Martín, Diversidad, Soberanía
+        "2025-12-08", "2025-12-25"  # Inmaculada, Navidad
+    ]
+    feriados_set = set(pd.to_datetime(feriados_arg).date)
+    df["is_feriado"] = df["created_at"].dt.date.isin(feriados_set).astype(int)
+    df["dias_desde_feriado"] = df["created_at"].apply(
+        lambda x: min([abs((x.date() - f).days) for f in feriados_set])
+    )
+    df["dias_hasta_feriado"] = df["created_at"].apply(
+        lambda x: min([((f - x.date()).days) for f in feriados_set if f >= x.date()], default=365)
+    )
+    
+    # Features de texto
     df["text_length"] = df["text"].astype(str).str.len()
     df["word_count"] = df["text"].astype(str).str.split().str.len()
     df["has_hashtag"] = df["text"].astype(str).str.contains("#", na=False).astype(int)
@@ -162,10 +207,31 @@ def run_pipeline():
         df[f"{tgt}_rollmed_30d"] = s.rolling("30D", min_periods=3).median().shift(1).reset_index(drop=True)
         df[f"{tgt}_ema_14d"] = s.ewm(span=14, min_periods=3, adjust=False).mean().shift(1).reset_index(drop=True)
         df[f"{tgt}_rel"] = df[tgt] / (1e-3 + df[f"{tgt}_rollmed_30d"])
+        
+        # 🆕 FEATURES DE VOLATILIDAD para IC dinámico
+        df[f"{tgt}_std_7d"] = s.rolling("7D", min_periods=2).std().shift(1).reset_index(drop=True).fillna(0)
+        df[f"{tgt}_std_30d"] = s.rolling("30D", min_periods=5).std().shift(1).reset_index(drop=True).fillna(0)
+        df[f"{tgt}_cv_30d"] = (df[f"{tgt}_std_30d"] / (df[f"{tgt}_rollmed_30d"] + 1e-3)).fillna(0)  # Coeficiente variación
+        
+        # 🆕 MOMENTUM y ACELERACIÓN
+        df[f"{tgt}_diff_1"] = s.diff(1).shift(1).reset_index(drop=True).fillna(0)  # Cambio último post
+        df[f"{tgt}_diff_3"] = s.diff(3).shift(1).reset_index(drop=True).fillna(0)  # Cambio últimos 3
+        df[f"{tgt}_momentum_7d"] = s.rolling("7D", min_periods=2).apply(lambda x: (x[-1] - x[0]) if len(x) > 1 else 0).shift(1).reset_index(drop=True).fillna(0)
+        
+        # 🆕 RANGO y SPREAD
+        df[f"{tgt}_range_7d"] = (s.rolling("7D", min_periods=2).max() - s.rolling("7D", min_periods=2).min()).shift(1).reset_index(drop=True).fillna(0)
+        df[f"{tgt}_iqr_30d"] = (s.rolling("30D", min_periods=5).quantile(0.75) - s.rolling("30D", min_periods=5).quantile(0.25)).shift(1).reset_index(drop=True).fillna(0)
 
     s_replies = df.set_index("created_at")["replies"]
     roll_std = s_replies.rolling("30D", min_periods=5).std().shift(1).reset_index(drop=True)
     df["replies_zscore_30d"] = ((df["replies"] - df["replies_rollmed_30d"]) / (roll_std + 1e-3)).fillna(0)
+    
+    # 🆕 FEATURES TEMPORALES DE INCERTIDUMBRE
+    df["days_since_last"] = df["created_at"].diff().dt.total_seconds() / 86400
+    df["days_since_last"] = df["days_since_last"].fillna(df["days_since_last"].median())
+    df["posting_irregularity"] = df["days_since_last"].rolling(7, min_periods=1).std().fillna(0)
+    
+    print(f"✅ Features de volatilidad agregadas (std, cv, momentum, range, iqr)")
 
     # ===== 1️⃣ INTENSIDAD DE PICO (continua) =====
     print("\n🔍 Calculando intensidad de picos...")
@@ -198,19 +264,36 @@ def run_pipeline():
 
     # ===== 2️⃣ ENTRENAR CLASIFICADOR DE PICOS =====
     print("\n🎯 Entrenando clasificador de picos...")
+    
+    # Split temporal para clasificador
+    cutoff_clf = df["created_at"].max() - pd.Timedelta(days=VAL_WINDOW_DAYS + FUTURE_GAP_DAYS)
+    idx_train_clf = df["created_at"] <= cutoff_clf
+    idx_val_clf = df["created_at"] > cutoff_clf
+    
     X_clf = df[feat_cols_base].fillna(0).values
     X_clf = np.nan_to_num(X_clf, nan=0.0, posinf=0.0, neginf=0.0)
     y_clf = df["is_jump"].values
     
+    # Train/Val split
+    X_clf_train = X_clf[idx_train_clf]
+    y_clf_train = y_clf[idx_train_clf]
+    X_clf_val = X_clf[idx_val_clf]
+    y_clf_val = y_clf[idx_val_clf]
+    
+    # Escalar
     scaler_clf = StandardScaler()
-    X_clf_scaled = scaler_clf.fit_transform(X_clf)
+    X_clf_train_scaled = scaler_clf.fit_transform(X_clf_train)
+    X_clf_val_scaled = scaler_clf.transform(X_clf_val)
+    X_clf_scaled = scaler_clf.transform(X_clf)  # Para usar después
     
+    # Entrenar solo en train
     clf_jump = GradientBoostingClassifier(n_estimators=200, learning_rate=0.05, max_depth=3, random_state=42)
-    clf_jump.fit(X_clf_scaled, y_clf)
+    clf_jump.fit(X_clf_train_scaled, y_clf_train)
     
-    y_pred_clf = clf_jump.predict(X_clf_scaled)
-    print("\n📋 Reporte clasificador:")
-    print(classification_report(y_clf, y_pred_clf, target_names=["Normal", "Pico"]))
+    # Evaluar en val (no en train!)
+    y_pred_clf_val = clf_jump.predict(X_clf_val_scaled)
+    print("\n📋 Reporte clasificador (validation set):")
+    print(classification_report(y_clf_val, y_pred_clf_val, target_names=["Normal", "Pico"]))
 
     # ===== 3️⃣ ENTRENAR MODELOS LSTM + RESIDUAL BOOSTERS =====
     print("\n" + "="*60)
@@ -301,8 +384,8 @@ def run_pipeline():
         model.load_state_dict(torch.load(os.path.join(MODEL_DIR, f"uala_{target_name}_lstm.pt")))
         model.eval()
         
-        # ===== 4️⃣ ENTRENAR RESIDUAL BOOSTER PARA PICOS =====
-        print(f"\n🔧 Entrenando residual booster para picos de {target_name}...")
+        # ===== 4️⃣ ENTRENAR DUAL RESIDUAL BOOSTERS =====
+        print(f"\n🔧 Entrenando residual boosters (picos + normales) para {target_name}...")
         
         with torch.no_grad():
             preds_train = model(X_train).cpu().numpy()[:, 0, 1]  # Mediana
@@ -314,38 +397,69 @@ def run_pipeline():
         is_jump_seq = df["is_jump"].iloc[SEQ_LEN:].reset_index(drop=True).values
         is_jump_train = is_jump_seq[idx_train_seq]
         
-        # Entrenar booster solo en picos
+        # 4A: Entrenar booster para PICOS
         mask_jump_train = is_jump_train == 1
-        if mask_jump_train.sum() > 10:  # Mínimo 10 ejemplos de picos
-            X_jump_train = X_seq[idx_train_seq][mask_jump_train][:, -1, :]  # Último timestep
+        booster_jump = None
+        if mask_jump_train.sum() > 10:
+            X_jump_train = X_seq[idx_train_seq][mask_jump_train][:, -1, :]
             residuals_jump = residuals_train[mask_jump_train]
             
-            reg_jump = GradientBoostingRegressor(n_estimators=150, learning_rate=0.05, max_depth=4, random_state=42)
-            reg_jump.fit(X_jump_train, residuals_jump)
-            
-            residual_boosters[target_name] = reg_jump
-            print(f"   ✅ Booster entrenado con {mask_jump_train.sum()} picos")
+            booster_jump = GradientBoostingRegressor(n_estimators=150, learning_rate=0.05, max_depth=4, random_state=42)
+            booster_jump.fit(X_jump_train, residuals_jump)
+            print(f"   ✅ Booster PICOS entrenado con {mask_jump_train.sum()} muestras")
         else:
-            residual_boosters[target_name] = None
             print(f"   ⚠️ No hay suficientes picos para entrenar booster")
         
-        # Evaluación final con booster
+        # 4B: Entrenar booster para NORMALES
+        mask_normal_train = is_jump_train == 0
+        booster_normal = None
+        if mask_normal_train.sum() > 20:
+            X_normal_train = X_seq[idx_train_seq][mask_normal_train][:, -1, :]
+            residuals_normal = residuals_train[mask_normal_train]
+            
+            booster_normal = GradientBoostingRegressor(n_estimators=100, learning_rate=0.05, max_depth=3, random_state=42)
+            booster_normal.fit(X_normal_train, residuals_normal)
+            print(f"   ✅ Booster NORMALES entrenado con {mask_normal_train.sum()} muestras")
+        else:
+            print(f"   ⚠️ No hay suficientes normales para entrenar booster")
+        
+        # Guardar ambos boosters
+        residual_boosters[target_name] = {
+            'jump': booster_jump,
+            'normal': booster_normal
+        }
+        
+        # Evaluación final con boosters duales
         with torch.no_grad():
             preds_q = model(X_val).cpu().numpy()
         
         Y_val_np = Y_val.cpu().numpy()[:, 0]
-        preds_median = preds_q[:, 0, 1]
+        preds_median = preds_q[:, 0, 1].copy()
         
-        # Aplicar booster en picos de validación
+        # Aplicar boosters según tipo de post
         is_jump_val = is_jump_seq[idx_val_seq]
-        if residual_boosters[target_name] is not None:
+        n_boosted_jump = 0
+        n_boosted_normal = 0
+        
+        # Aplicar booster de PICOS
+        if booster_jump is not None:
             mask_jump_val = is_jump_val == 1
             if mask_jump_val.sum() > 0:
                 X_jump_val = X_seq[idx_val_seq][mask_jump_val][:, -1, :]
-                boost_residuals = residual_boosters[target_name].predict(X_jump_val)
-                # Aplicar solo 30% del boost para no sobre-corregir
-                preds_median[mask_jump_val] += 0.3 * boost_residuals
-                print(f"   📈 Boosted {mask_jump_val.sum()} picos en validación (factor 0.3)")
+                boost_residuals_jump = booster_jump.predict(X_jump_val)
+                preds_median[mask_jump_val] += 0.25 * boost_residuals_jump
+                n_boosted_jump = mask_jump_val.sum()
+        
+        # Aplicar booster de NORMALES
+        if booster_normal is not None:
+            mask_normal_val = is_jump_val == 0
+            if mask_normal_val.sum() > 0:
+                X_normal_val = X_seq[idx_val_seq][mask_normal_val][:, -1, :]
+                boost_residuals_normal = booster_normal.predict(X_normal_val)
+                preds_median[mask_normal_val] += 0.20 * boost_residuals_normal
+                n_boosted_normal = mask_normal_val.sum()
+        
+        print(f"   📈 Boosted: {n_boosted_jump} picos (25%) + {n_boosted_normal} normales (20%) [ÓPTIMO]")
         
         mae_final = mean_absolute_error(Y_val_np, preds_median)
         

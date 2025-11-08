@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.linear_model import LinearRegression
 import os
 import glob
 import pickle
@@ -15,7 +14,7 @@ sns.set_style("whitegrid")
 plt.rcParams['figure.figsize'] = (18, 12)
 
 # ===== CONFIGURACIÓN =====
-DATA_DIR = "../core/data"
+DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "core", "data")
 TARGETS = ["likes", "replies", "views"]
 SEQ_LEN = 8
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -54,12 +53,45 @@ df = df_all[df_all["dataset_name"].str.contains("uala", case=False, na=False)].c
 
 print(f"✅ Registros Ualá: {len(df)}")
 
-# ===== FEATURES =====
+# ===== FEATURES TEMPORALES =====
 df["month_sin"] = np.sin(2 * np.pi * df["created_at"].dt.month / 12)
 df["month_cos"] = np.cos(2 * np.pi * df["created_at"].dt.month / 12)
 df["hour"] = df["created_at"].dt.hour
 df["weekday"] = df["created_at"].dt.weekday
 df["is_weekend"] = (df["weekday"] >= 5).astype(int)
+
+# Features de horario (binning por franjas)
+df["hour_sin"] = np.sin(2 * np.pi * df["hour"] / 24)
+df["hour_cos"] = np.cos(2 * np.pi * df["hour"] / 24)
+df["is_morning"] = ((df["hour"] >= 6) & (df["hour"] < 12)).astype(int)  # 6-12
+df["is_afternoon"] = ((df["hour"] >= 12) & (df["hour"] < 18)).astype(int)  # 12-18
+df["is_evening"] = ((df["hour"] >= 18) & (df["hour"] < 22)).astype(int)  # 18-22
+df["is_night"] = ((df["hour"] >= 22) | (df["hour"] < 6)).astype(int)  # 22-6
+
+# Feriados Argentina (2024-2025)
+feriados_arg = [
+    "2024-01-01", "2024-02-12", "2024-02-13",  # Año Nuevo, Carnaval
+    "2024-03-24", "2024-03-28", "2024-03-29",  # Memoria, Semana Santa
+    "2024-04-02", "2024-05-01", "2024-05-25",  # Malvinas, Trabajador, Revolución
+    "2024-06-17", "2024-06-20", "2024-07-09",  # Güemes, Bandera, Independencia
+    "2024-08-17", "2024-10-12", "2024-11-18",  # San Martín, Diversidad, Soberanía
+    "2024-12-08", "2024-12-25",  # Inmaculada, Navidad
+    "2025-01-01", "2025-03-03", "2025-03-04",  # Año Nuevo, Carnaval
+    "2025-03-24", "2025-04-02", "2025-04-17", "2025-04-18",  # Memoria, Malvinas, Semana Santa
+    "2025-05-01", "2025-05-25", "2025-06-16", "2025-06-20",  # Trabajador, Revolución, Güemes, Bandera
+    "2025-07-09", "2025-08-17", "2025-10-12", "2025-11-24",  # Independencia, San Martín, Diversidad, Soberanía
+    "2025-12-08", "2025-12-25"  # Inmaculada, Navidad
+]
+feriados_set = set(pd.to_datetime(feriados_arg).date)
+df["is_feriado"] = df["created_at"].dt.date.isin(feriados_set).astype(int)
+df["dias_desde_feriado"] = df["created_at"].apply(
+    lambda x: min([abs((x.date() - f).days) for f in feriados_set])
+)
+df["dias_hasta_feriado"] = df["created_at"].apply(
+    lambda x: min([((f - x.date()).days) for f in feriados_set if f >= x.date()], default=365)
+)
+
+# Features de texto
 df["text_length"] = df["text"].astype(str).str.len()
 df["word_count"] = df["text"].astype(str).str.split().str.len()
 df["has_hashtag"] = df["text"].astype(str).str.contains("#", na=False).astype(int)
@@ -88,10 +120,29 @@ for tgt in TARGETS:
     df[f"{tgt}_rollmed_30d"] = s.rolling("30D", min_periods=3).median().shift(1).reset_index(drop=True)
     df[f"{tgt}_ema_14d"] = s.ewm(span=14, min_periods=3, adjust=False).mean().shift(1).reset_index(drop=True)
     df[f"{tgt}_rel"] = df[tgt] / (1e-3 + df[f"{tgt}_rollmed_30d"])
+    
+    # Features de volatilidad
+    df[f"{tgt}_std_7d"] = s.rolling("7D", min_periods=2).std().shift(1).reset_index(drop=True).fillna(0)
+    df[f"{tgt}_std_30d"] = s.rolling("30D", min_periods=5).std().shift(1).reset_index(drop=True).fillna(0)
+    df[f"{tgt}_cv_30d"] = (df[f"{tgt}_std_30d"] / (df[f"{tgt}_rollmed_30d"] + 1e-3)).fillna(0)
+    
+    # Momentum y aceleración
+    df[f"{tgt}_diff_1"] = s.diff(1).shift(1).reset_index(drop=True).fillna(0)
+    df[f"{tgt}_diff_3"] = s.diff(3).shift(1).reset_index(drop=True).fillna(0)
+    df[f"{tgt}_momentum_7d"] = s.rolling("7D", min_periods=2).apply(lambda x: (x[-1] - x[0]) if len(x) > 1 else 0).shift(1).reset_index(drop=True).fillna(0)
+    
+    # Rango y spread
+    df[f"{tgt}_range_7d"] = (s.rolling("7D", min_periods=2).max() - s.rolling("7D", min_periods=2).min()).shift(1).reset_index(drop=True).fillna(0)
+    df[f"{tgt}_iqr_30d"] = (s.rolling("30D", min_periods=5).quantile(0.75) - s.rolling("30D", min_periods=5).quantile(0.25)).shift(1).reset_index(drop=True).fillna(0)
 
 s_replies = df.set_index("created_at")["replies"]
 roll_std = s_replies.rolling("30D", min_periods=5).std().shift(1).reset_index(drop=True)
 df["replies_zscore_30d"] = ((df["replies"] - df["replies_rollmed_30d"]) / (roll_std + 1e-3)).fillna(0)
+
+# Features temporales de incertidumbre
+df["days_since_last"] = df["created_at"].diff().dt.total_seconds() / 86400
+df["days_since_last"] = df["days_since_last"].fillna(df["days_since_last"].median())
+df["posting_irregularity"] = df["days_since_last"].rolling(7, min_periods=1).std().fillna(0)
 
 # Jump intensity
 df["jump_intensity"] = np.maximum.reduce([
@@ -117,7 +168,8 @@ feat_cols_replies = feat_cols_base + ['replies_zscore_30d']
 print(f"✅ Features: Likes({len(feat_cols_base)}), Replies({len(feat_cols_replies)}), Views({len(feat_cols_base)})")
 
 # Cargar boosters
-with open("models_uala_v3_jumpboosted/jump_models.pkl", "rb") as f:
+MODEL_DIR = os.path.join(os.path.dirname(__file__), "models_uala_v3_jumpboosted")
+with open(os.path.join(MODEL_DIR, "jump_models.pkl"), "rb") as f:
     jump_models = pickle.load(f)
     boosters = jump_models["boosters"]
 
@@ -140,11 +192,11 @@ for idx, target in enumerate(TARGETS):
     if target == "replies":
         feat_cols = feat_cols_replies
         n_features = len(feat_cols_replies)
-        model_path = f"models_uala_v3_jumpboosted/uala_{target}_lstm.pt"
+        model_path = os.path.join(MODEL_DIR, f"uala_{target}_lstm.pt")
     else:
         feat_cols = feat_cols_base
         n_features = len(feat_cols_base)
-        model_path = f"models_uala_v3_jumpboosted/uala_{target}_lstm.pt"
+        model_path = os.path.join(MODEL_DIR, f"uala_{target}_lstm.pt")
     
     # Añadir jump_intensity
     X_with_jump = df[feat_cols + ["jump_intensity"]].fillna(0).values
@@ -178,31 +230,35 @@ for idx, target in enumerate(TARGETS):
     is_jump_val = is_jump_seq[idx_val_seq]
     
     if boosters[target] is not None:
+        # Aplicar dual boosters según tipo de post
         mask_jump_val = is_jump_val == 1
-        if mask_jump_val.sum() > 0:
+        mask_normal_val = is_jump_val == 0
+        
+        if boosters[target]['jump'] is not None and mask_jump_val.sum() > 0:
             X_jump_val = X_seq[idx_val_seq][mask_jump_val][:, -1, :]
-            boost_residuals = boosters[target].predict(X_jump_val)
-            preds_median[mask_jump_val] += 0.3 * boost_residuals
+            boost_residuals_jump = boosters[target]['jump'].predict(X_jump_val)
+            preds_median[mask_jump_val] += 0.25 * boost_residuals_jump
+        
+        if boosters[target]['normal'] is not None and mask_normal_val.sum() > 0:
+            X_normal_val = X_seq[idx_val_seq][mask_normal_val][:, -1, :]
+            boost_residuals_normal = boosters[target]['normal'].predict(X_normal_val)
+            preds_median[mask_normal_val] += 0.20 * boost_residuals_normal
     
-    # Calibración
-    lr = LinearRegression(fit_intercept=False)
-    lr.fit(preds_median.reshape(-1, 1), y_val)
-    scale_factor = lr.coef_[0]
+    # Sin calibración - usar predicciones directas
+    preds_final = preds_median
+    q01_final = preds_q[:, 0]
+    q99_final = preds_q[:, 2]
     
-    preds_calib = preds_median * scale_factor
-    q01_c = preds_q[:, 0] * scale_factor
-    q99_c = preds_q[:, 2] * scale_factor
-    
-    # Ajuste dinámico para views
+    # Ajuste dinámico para views (solo IC)
     if target == "views":
-        residuals = np.abs(y_val - preds_calib)
-        factor = 5.0 * (np.mean(residuals) / np.mean(preds_calib + 1e-6))
-        q01_c = q01_c - factor * np.abs(q01_c - preds_calib)
-        q99_c = q99_c + factor * np.abs(q99_c - preds_calib)
+        residuals = np.abs(y_val - preds_final)
+        factor = 5.0 * (np.mean(residuals) / np.mean(preds_final + 1e-6))
+        q01_final = q01_final - factor * np.abs(q01_final - preds_final)
+        q99_final = q99_final + factor * np.abs(q99_final - preds_final)
     
     # MAE y Coverage
-    mae = np.mean(np.abs(y_val - preds_calib))
-    coverage = np.mean((y_val >= q01_c) & (y_val <= q99_c))
+    mae = np.mean(np.abs(y_val - preds_final))
+    coverage = np.mean((y_val >= q01_final) & (y_val <= q99_final))
     
     # ===== GRÁFICO DE ENGAGEMENT =====
     ax = axes[idx]
@@ -211,30 +267,41 @@ for idx, target in enumerate(TARGETS):
     # Líneas principales
     ax.plot(x_range, y_val, 'o-', linewidth=2, markersize=5, 
             label='Real', color='steelblue', alpha=0.9)
-    ax.plot(x_range, preds_calib, 's--', linewidth=1.5, markersize=4, 
-            label='Predicho (JumpBoosted)', color='coral', alpha=0.8)
+    ax.plot(x_range, preds_final, 's--', linewidth=1.5, markersize=4, 
+            label='Predicho (Dual Boosted)', color='coral', alpha=0.8)
     
     # Banda de confianza
-    ax.fill_between(x_range, q01_c, q99_c, alpha=0.1, color='orange', label='IC 98%')
+    ax.fill_between(x_range, q01_final, q99_final, alpha=0.1, color='orange', label='IC 95%')
     
     # Marcar picos detectados
     jump_indices = np.where(is_jump_val)[0]
+    normal_indices = np.where(~is_jump_val)[0]
+    
     if len(jump_indices) > 0:
         ax.scatter(jump_indices, y_val[jump_indices], 
                   s=120, color='red', marker='*', zorder=5, alpha=0.7,
                   label=f'Picos detectados ({len(jump_indices)})', 
                   edgecolors='darkred', linewidths=1.5)
         
-        # Marcar donde se aplicó el boost
+        # Marcar donde se aplicó el boost de PICOS
         mask_jump_val = is_jump_val == 1
         if mask_jump_val.sum() > 0:
-            ax.scatter(jump_indices, preds_calib[mask_jump_val], 
+            ax.scatter(jump_indices, preds_final[mask_jump_val], 
                       s=80, color='purple', marker='^', zorder=4, alpha=0.6,
-                      label=f'Predicción boosted', edgecolors='indigo', linewidths=1)
+                      label=f'Boost Picos (25%)', edgecolors='indigo', linewidths=1)
+    
+    # Marcar algunas muestras normales boosted (para mostrar variabilidad)
+    if len(normal_indices) > 0:
+        sample_normals = normal_indices[::5][:10]  # Cada 5ta muestra, máx 10
+        ax.scatter(sample_normals, preds_final[sample_normals], 
+                  s=40, color='green', marker='o', zorder=3, alpha=0.5,
+                  label=f'Boost Normales (20%)', edgecolors='darkgreen', linewidths=0.5)
     
     # Título y etiquetas
-    ax.set_title(f'{target.upper()} - JumpBoosted\n' + 
-                 f'MAE: {mae:.2f} | Coverage: {coverage*100:.1f}% | Picos: {len(jump_indices)} | Boosted: {mask_jump_val.sum() if len(jump_indices)>0 else 0}',
+    n_boosted_jump = mask_jump_val.sum() if len(jump_indices) > 0 else 0
+    n_boosted_normal = (~is_jump_val).sum()
+    ax.set_title(f'{target.upper()} - Dual Boosted (Picos + Normales)\n' + 
+                 f'MAE: {mae:.2f} | Coverage: {coverage*100:.1f}% | Picos: {n_boosted_jump} | Normales: {n_boosted_normal}',
                  fontsize=13, fontweight='bold', pad=10)
     ax.set_xlabel('Muestra de Validación', fontsize=11)
     ax.set_ylabel(target.capitalize(), fontsize=11)

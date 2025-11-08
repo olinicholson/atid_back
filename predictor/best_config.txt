@@ -1,0 +1,3 @@
+factor_jump=0.25
+factor_normal=0.20
+mae_avg=528.659
