@@ -17,15 +17,24 @@ from webdriver_manager.chrome import ChromeDriverManager
 LOGIN_USERNAME = os.getenv("LI_USER") or "guillerminabacigalupo@hotmail.com"
 LOGIN_PASSWORD = os.getenv("LI_PASS") or "holaManola1"
 
-WAIT         = 15
-SCROLL_PAUSE = (0.9, 1.8)
-HEADLESS     = False
-TZ           = ZoneInfo("America/Argentina/Salta")
+WAIT               = 20              # WebDriverWait (s)
+SCROLL_PAUSE       = (1.2, 2.6)      # pausa aleatoria entre scrolls
+HEADLESS           = False
+TZ                 = ZoneInfo("America/Argentina/Salta")
 
-# “Raspar más”
-MAX_SCROLLS        = 400
-STALL_TOLERANCE    = 8
-TRY_LOAD_MORE_EACH = 3
+# “Raspar más” y ser pacientes con el lazy-load
+MAX_SCROLLS          = 600           # profundidad total de scroll
+STALL_TOLERANCE      = 14            # fallback general (anti-estancamiento ya existente)
+TRY_LOAD_MORE_EACH   = 3             # cada N scrolls intenta clickear “Mostrar más”
+MICRO_SCROLL_STEPS   = 6             # micro-scrolls por ciclo
+MICRO_SCROLL_PAUSE   = (0.35, 0.6)   # pausa por micro-scroll
+WAIT_NEW_POSTS_SECS  = 12            # esperar hasta Xs a que aparezcan posts nuevos tras llegar al fondo
+RENDER_RETRIES       = 3             # reintentos para forzar el render de un post
+PER_POST_SETTLE      = (0.35, 0.7)   # pausa tras centrar cada post
+
+# NUEVOS UMBRALES de corte por no-crecimiento
+DOM_STALL_PATIENCE   = 6             # si el DOM no crece en 6 scrolls seguidos -> cortar
+ADDED_STALL_PATIENCE = 4             # si no se agregan posts en 4 scrolls seguidos -> cortar
 # ==================================================
 
 # =============== UTIL: números ====================
@@ -175,14 +184,44 @@ def try_click_load_more(driver):
                 EC.element_to_be_clickable((By.XPATH, f"//button[contains(., '{label}')]"))
             )
             driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btn)
-            time.sleep(0.4)
+            time.sleep(0.5)
             btn.click()
-            time.sleep(random.uniform(0.8, 1.3))
+            time.sleep(random.uniform(1.0, 1.5))
             return True
         except:
             continue
     return False
 # ==================================================
+
+# =============== SCROLL SUAVE Y ESPERAS ===============
+def smooth_scroll_chunk(driver):
+    for _ in range(MICRO_SCROLL_STEPS):
+        driver.execute_script("window.scrollBy(0, Math.floor(window.innerHeight*0.5));")
+        time.sleep(random.uniform(*MICRO_SCROLL_PAUSE))
+
+def wait_for_new_posts(driver, previous_count, timeout=WAIT_NEW_POSTS_SECS):
+    end = time.time() + timeout
+    while time.time() < end:
+        count = len(driver.find_elements(By.XPATH, "//div[@data-urn and contains(@data-urn,'urn:li:activity:')]"))
+        if count > previous_count:
+            return True
+        time.sleep(0.8)
+    return False
+
+def ensure_post_rendered(driver, div):
+    for _ in range(RENDER_RETRIES):
+        try:
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", div)
+            time.sleep(random.uniform(*PER_POST_SETTLE))
+            div.find_element(By.XPATH, ".//li[contains(@class,'social-details-social-counts__item')]")
+            return True
+        except:
+            driver.execute_script("window.scrollBy(0, -Math.floor(window.innerHeight*0.2));")
+            time.sleep(0.3)
+            driver.execute_script("window.scrollBy(0, Math.floor(window.innerHeight*0.25));")
+            time.sleep(0.4)
+    return False
+# =======================================================
 
 # ================== EXTRACCIONES ==================
 def get_profile_name(driver, fallback_url: str) -> str:
@@ -284,9 +323,17 @@ def scrape_posts(driver, profile_url):
     posts, seen = [], set()
     scrolls, last_seen, stall = 0, 0, 0
 
+    # NUEVAS variables para corte por estancamiento
+    prev_dom_count = 0
+    dom_no_growth_streak = 0
+
+    prev_seen_count = 0
+    added_none_streak = 0
+
     while scrolls < MAX_SCROLLS:
         post_divs = driver.find_elements(By.XPATH, "//div[@data-urn and contains(@data-urn,'urn:li:activity:')]")
-        print(f"Scroll {scrolls+1}: {len(post_divs)} posts en DOM")
+        current_dom_count = len(post_divs)
+        print(f"Scroll {scrolls+1}: {current_dom_count} posts en DOM")
 
         for div in post_divs:
             try:
@@ -295,8 +342,7 @@ def scrape_posts(driver, profile_url):
                     continue
                 seen.add(urn)
 
-                driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", div)
-                time.sleep(random.uniform(0.4, 0.9))
+                ensure_post_rendered(driver, div)
 
                 try:
                     text_elem = div.find_element(By.XPATH, ".//div[contains(@class,'update-components-text')]")
@@ -322,18 +368,45 @@ def scrape_posts(driver, profile_url):
             except Exception as e:
                 print(f"Post error: {e}")
 
-        driver.execute_script("window.scrollBy(0, document.body.scrollHeight * 0.85);")
+        # ===== CONTROL: No crecimiento del DOM =====
+        if current_dom_count <= prev_dom_count:
+            dom_no_growth_streak += 1
+        else:
+            dom_no_growth_streak = 0
+        prev_dom_count = current_dom_count
+
+        # ===== CONTROL: No se agregan posts =====
+        added = len(seen) - prev_seen_count
+        if added <= 0:
+            added_none_streak += 1
+        else:
+            added_none_streak = 0
+        prev_seen_count = len(seen)
+
+        # Cortes por estancamiento "duro"
+        if dom_no_growth_streak >= DOM_STALL_PATIENCE:
+            print(f"No crece el DOM en {DOM_STALL_PATIENCE} scrolls seguidos. Corto.")
+            break
+        if added_none_streak >= ADDED_STALL_PATIENCE:
+            print(f"No se agregan posts en {ADDED_STALL_PATIENCE} scrolls seguidos. Corto.")
+            break
+
+        # Scroll suave + pausas
+        smooth_scroll_chunk(driver)
         time.sleep(random.uniform(*SCROLL_PAUSE))
         scrolls += 1
 
+        # cada N scrolls intenta botón "Mostrar más / Ver más"
         if scrolls % TRY_LOAD_MORE_EACH == 0:
             try_click_load_more(driver)
 
-        if len(seen) == last_seen:
+        # Esperar a que aparezcan posts nuevos tras llegar al fondo
+        if not wait_for_new_posts(driver, current_dom_count, timeout=WAIT_NEW_POSTS_SECS):
+            # si no aparecieron, aplicar estrategia anti-estancamiento general
             stall += 1
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(random.uniform(1.0, 1.6))
-            driver.execute_script("window.scrollBy(0, -window.innerHeight * 0.5);")
+            time.sleep(random.uniform(1.2, 1.8))
+            driver.execute_script("window.scrollBy(0, -Math.floor(window.innerHeight*0.5));")
             time.sleep(random.uniform(0.6, 1.0))
             try_click_load_more(driver)
             if stall >= STALL_TOLERANCE:
