@@ -42,7 +42,7 @@ def main():
            .sort_values(["usuarios_unicos","Empresa"], ascending=[False, True])
            .head(10))
 
-    out = Path(f"top10_{slug_from_filename(path)}.csv")
+    out = Path(f"top10_empresas_intereses.csv")
     top.to_csv(out, index=False, encoding="utf-8")
 
     print(f"✅ TOP 10 generado: {out}")
