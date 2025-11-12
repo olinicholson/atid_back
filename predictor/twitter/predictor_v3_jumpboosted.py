@@ -27,7 +27,9 @@ if torch.cuda.is_available():
     torch.backends.cudnn.benchmark = False
 
 # ============================== CONFIG ==============================
-DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "core", "data")
+# Project root (two levels above predictor/twitter)
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+DATA_DIR = os.path.join(PROJECT_ROOT, "core", "data")
 TARGETS = ["likes", "replies", "views"]
 QUANTILES = [0.01, 0.5, 0.99]  # 98% teórico
 N_Q = len(QUANTILES)
@@ -126,12 +128,26 @@ def run_pipeline():
     print("🚀 Iniciando pipeline Ualá v3 JumpBoosted (picos amplificados)")
 
     # Cargar datasets
+    # Prefer the 'with_trends' files, but fall back to any posts_*.csv if needed.
     files = glob.glob(os.path.join(DATA_DIR, "posts_*with_trends*.csv"))
+    if len(files) == 0:
+        files = glob.glob(os.path.join(DATA_DIR, "posts_*.csv"))
+
     dfs = []
     for f in files:
-        df_temp = pd.read_csv(f)
-        df_temp["dataset_name"] = os.path.basename(f).split("_with_trends")[0].replace("posts_", "").lower()
+        try:
+            df_temp = pd.read_csv(f)
+        except Exception as e:
+            print(f"WARN: unable to read {f}: {e}")
+            continue
+        # normalize dataset_name as before
+        name = os.path.basename(f).split("_with_trends")[0].replace("posts_", "").replace('.csv','').lower()
+        df_temp["dataset_name"] = name
         dfs.append(df_temp)
+
+    if len(dfs) == 0:
+        raise RuntimeError(f"No post files found in DATA_DIR={DATA_DIR}. Looked for posts_*with_trends*.csv and posts_*.csv.\nPlease ensure the core/data files are present or adjust DATA_DIR.")
+
     df_all = pd.concat(dfs, ignore_index=True)
     df_all["created_at"] = pd.to_datetime(df_all["created_at"])
     df = df_all[df_all["dataset_name"].str.contains("uala", case=False, na=False)].copy()
@@ -423,10 +439,12 @@ def run_pipeline():
         else:
             print(f"   ⚠️ No hay suficientes normales para entrenar booster")
         
-        # Guardar ambos boosters
+        # Guardar ambos boosters (incluyendo la lista de features usada por el booster)
+        # Guardamos explícitamente 'feat_cols' = per-target feature cols + ['jump_intensity']
         residual_boosters[target_name] = {
             'jump': booster_jump,
-            'normal': booster_normal
+            'normal': booster_normal,
+            'feat_cols': list(feat_cols) + ['jump_intensity']
         }
         
         # Evaluación final con boosters duales
@@ -484,6 +502,35 @@ def run_pipeline():
             "boosters": residual_boosters
         }, f)
     print(f"\n✅ Clasificador y boosters guardados")
+    # Guardar metadata útil para loaders/plotters: features + model dims
+    try:
+        import json
+        feature_meta = {
+            "seq_len": SEQ_LEN,
+            "targets": {},
+                "clf_features": feat_cols_base
+        }
+        for tgt in TARGETS:
+            # Use the same naming we used during training
+            if tgt == "replies":
+                cols = feat_cols_replies
+            else:
+                cols = feat_cols_base
+            # also expose booster-specific feature ordering so inference can exactly
+            # reconstruct the vector used to train residual boosters
+            feature_meta["targets"][tgt] = {
+                "feat_cols": cols,
+                "n_features": len(cols),
+                "input_dim": len(cols) + 1,
+                "hidden": 256,
+                "head_hidden": 128,
+                "booster_feat_cols": list(cols) + ['jump_intensity']
+            }
+        with open(os.path.join(MODEL_DIR, "feature_meta.json"), "w", encoding="utf-8") as fh:
+            json.dump(feature_meta, fh, ensure_ascii=False, indent=2)
+        print(f"✅ Feature metadata saved to {os.path.join(MODEL_DIR, 'feature_meta.json')}")
+    except Exception as e:
+        print(f"WARN: failed to write feature_meta.json: {e}")
     
     # ===== RESUMEN FINAL =====
     print("\n" + "="*60)

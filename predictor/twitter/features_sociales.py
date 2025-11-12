@@ -55,7 +55,13 @@ def generar_features_sociales(df_user, df_top10):
     # ================================
     # 3️⃣ Afinidad semántica (BERT)
     # ================================
-    model = SentenceTransformer("sentence-transformers/distiluse-base-multilingual-cased-v2")
+    # Try to initialize the SentenceTransformer model; if unavailable or encoding
+    # is too slow/fails, fall back to a noop that returns 0 similarity.
+    model = None
+    try:
+        model = SentenceTransformer("sentence-transformers/distiluse-base-multilingual-cased-v2")
+    except Exception:
+        model = None
 
     # Embeddings de los posts propios y del promedio diario top10
     df_top10_daily = (
@@ -64,15 +70,26 @@ def generar_features_sociales(df_user, df_top10):
         .reset_index()
     )
 
-    df_top10_daily["embedding"] = df_top10_daily["text"].apply(lambda t: model.encode(t))
-    emb_dict = df_top10_daily.set_index("date")["embedding"].to_dict()
+    emb_dict = {}
+    if model is not None:
+        try:
+            df_top10_daily["embedding"] = df_top10_daily["text"].apply(lambda t: model.encode(t))
+            emb_dict = df_top10_daily.set_index("date")["embedding"].to_dict()
+        except Exception:
+            emb_dict = {}
 
     def sim_bert(row):
-        if row["date"] not in emb_dict:
+        # If we don't have embeddings available, return neutral similarity 0
+        if not emb_dict or row.get("date") not in emb_dict:
             return 0
-        emb_user = model.encode(row["text"])
-        emb_top = emb_dict[row["date"]]
-        return float(cosine_similarity([emb_user], [emb_top])[0][0])
+        try:
+            emb_user = model.encode(row["text"]) if model is not None else None
+            if emb_user is None:
+                return 0
+            emb_top = emb_dict[row["date"]]
+            return float(cosine_similarity([emb_user], [emb_top])[0][0])
+        except Exception:
+            return 0
 
     df_user["semantic_sim_top10"] = df_user.apply(sim_bert, axis=1)
 

@@ -41,12 +41,28 @@ class QuantileLSTM(nn.Module):
 # ===== CARGAR Y PREPARAR DATOS =====
 print("🔄 Cargando y generando features...")
 
+# Normalize DATA_DIR to repo root (same logic as training pipeline)
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+DATA_DIR = os.path.join(PROJECT_ROOT, "core", "data")
+
+# Prefer the 'with_trends' files, but fall back to any posts_*.csv if needed.
 files = glob.glob(os.path.join(DATA_DIR, "posts_*with_trends*.csv"))
+if len(files) == 0:
+    files = glob.glob(os.path.join(DATA_DIR, "posts_*.csv"))
+
 dfs = []
 for f in files:
-    df_temp = pd.read_csv(f)
-    df_temp["dataset_name"] = os.path.basename(f).split("_with_trends")[0].replace("posts_", "").lower()
+    try:
+        df_temp = pd.read_csv(f)
+    except Exception as e:
+        print(f"WARN: unable to read {f}: {e}")
+        continue
+    df_temp["dataset_name"] = os.path.basename(f).split("_with_trends")[0].replace("posts_", "").replace('.csv','').lower()
     dfs.append(df_temp)
+
+if len(dfs) == 0:
+    raise RuntimeError(f"No post files found in DATA_DIR={DATA_DIR}. Looked for posts_*with_trends*.csv and posts_*.csv.\nPlease ensure the core/data files are present or adjust DATA_DIR.")
+
 df_all = pd.concat(dfs, ignore_index=True)
 df_all["created_at"] = pd.to_datetime(df_all["created_at"])
 df = df_all[df_all["dataset_name"].str.contains("uala", case=False, na=False)].copy()
@@ -171,7 +187,19 @@ print(f"✅ Features: Likes({len(feat_cols_base)}), Replies({len(feat_cols_repli
 MODEL_DIR = os.path.join(os.path.dirname(__file__), "models_uala_v3_jumpboosted")
 with open(os.path.join(MODEL_DIR, "jump_models.pkl"), "rb") as f:
     jump_models = pickle.load(f)
-    boosters = jump_models["boosters"]
+    boosters = jump_models.get("boosters", {}) if isinstance(jump_models, dict) else {}
+
+# Prefer feature_meta.json if present (provides per-target feat lists and model dims)
+feature_meta = None
+meta_path = os.path.join(MODEL_DIR, "feature_meta.json")
+if os.path.exists(meta_path):
+    try:
+        import json
+        with open(meta_path, "r", encoding="utf-8") as fh:
+            feature_meta = json.load(fh)
+        print(f"INFO: Loaded feature_meta.json from {meta_path}")
+    except Exception:
+        feature_meta = None
 
 # ===== CREAR SECUENCIAS =====
 def crear_secuencias(data, targets, seq_len=8):
@@ -189,14 +217,24 @@ for idx, target in enumerate(TARGETS):
     print(f"\n🎯 Procesando: {target.upper()}")
     
     # Determinar features
-    if target == "replies":
-        feat_cols = feat_cols_replies
-        n_features = len(feat_cols_replies)
+    # Prefer metadata-specified feature list and model dims when available
+    target_meta = feature_meta.get("targets", {}).get(target) if feature_meta else None
+    if target_meta and target_meta.get("feat_cols"):
+        feat_cols = target_meta["feat_cols"]
+        n_features = target_meta.get("n_features", len(feat_cols))
         model_path = os.path.join(MODEL_DIR, f"uala_{target}_lstm.pt")
+        input_dim_meta = target_meta.get("input_dim")
+        hidden_meta = target_meta.get("hidden", 256)
     else:
-        feat_cols = feat_cols_base
-        n_features = len(feat_cols_base)
+        if target == "replies":
+            feat_cols = feat_cols_replies
+            n_features = len(feat_cols_replies)
+        else:
+            feat_cols = feat_cols_base
+            n_features = len(feat_cols_base)
         model_path = os.path.join(MODEL_DIR, f"uala_{target}_lstm.pt")
+        input_dim_meta = None
+        hidden_meta = 256
     
     # Añadir jump_intensity
     X_with_jump = df[feat_cols + ["jump_intensity"]].fillna(0).values
@@ -214,9 +252,17 @@ for idx, target in enumerate(TARGETS):
     X_val = torch.FloatTensor(X_seq[idx_val_seq]).to(DEVICE)
     y_val = Y_seq[idx_val_seq].flatten()
     
-    # Cargar modelo
-    model = QuantileLSTM(input_dim=n_features+1, hidden=256, num_targets=1, dropout=0.3).to(DEVICE)
-    model.load_state_dict(torch.load(model_path, map_location=DEVICE))
+    # Cargar modelo (use metadata dims when available)
+    input_dim_use = input_dim_meta if input_dim_meta is not None else (n_features + 1)
+    model = QuantileLSTM(input_dim=input_dim_use, hidden=hidden_meta, num_targets=1, dropout=0.3).to(DEVICE)
+    try:
+        state = torch.load(model_path, map_location=DEVICE)
+        try:
+            model.load_state_dict(state)
+        except Exception:
+            model.load_state_dict(state, strict=False)
+    except Exception as e:
+        print(f"WARN: failed to load model {model_path}: {e}")
     model.eval()
     
     # Predicciones LSTM
