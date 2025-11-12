@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Virtual Environment
+venv/
+env/
+.venv/
+
+# Node modules (para atid-conexion)
+node_modules/
+package-lock.json
+
+# Models y artefactos de ML
+models_*/
+*.pt
+*.pth
+*.pkl
+*.h5
+
+# Plots y visualizaciones temporales
+*.png
+*.jpg
+*.pdf
+engagement_*.png
+
+# Archivos temporales
+temp_*.py
+debug_*.py
+test_*.py
+check_*.py
+
+# Logs
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
