@@ -1,0 +1,107 @@
+tweet_id,text,sentiment,score,confidence,emotions,tone,keywords,explanation,likes,retweets,replies,views,created_at
+0,"Cargar nafta y que te reintegren parte de lo que pagás 
+Te contamos cómo ",positivo,70,85,"alegría,entusiasmo",promocional,"nafta,reintegro,pagás,cómo","El tweet sugiere una oportunidad de obtener un reembolso al comprar combustible, lo cual genera una connotación positiva y atractiva para el usuario.",5,0,2,2000,2025-09-20 15:02:14+00:00
+1,"Todos los sábados, pagando en Axion con tu Tarjeta de Crédito Ualá, recibís un reintegro del 15%
+ Tope $5000 por semana (hasta $20.000 al mes)",positivo,75,90,"entusiasmo,alegría",promocional,"reintegro,Axion,Tarjeta Ualá,descuento","El tweet ofrece un beneficio económico (reintegro), lo que genera un sentimiento positivo y puede inducir entusiasmo en el receptor.",1,0,2,1000,2025-09-20 15:02:14+00:00
+2," Pagando con tu tarjeta física o desde el celu 
+*Válido desde el 15 de septiembre al 31 de diciembre.",neutral,55,80,,informativo,"tarjeta física,celu,válido,septiembre,diciembre",El tweet proporciona información sobre un período de validez de una promoción o beneficio. No expresa emociones fuertes.,1,0,0,1000,2025-09-20 15:02:15+00:00
+3,Esta pelea ya tiene ganador,positivo,80,90,"entusiasmo,alegría",emocional,"pelea,ganador","El tweet expresa una fuerte convicción sobre el resultado positivo de un evento ('pelea'), denotando optimismo y seguridad.",10,0,2,2000,2025-09-19 16:16:19+00:00
+4,"¿Pagar menos por salir sin billetera? Existe. Y no es porque te pagó un amigo.
+Te cuento cómo hacerlo ",positivo,75,85,"entusiasmo,sorpresa",promocional,"pagar menos,sin billetera,te cuento","El tweet genera curiosidad y promete una solución beneficiosa, lo que se interpreta como positivo. El tono es claramente promocional.",4,0,1,2000,2025-09-19 13:30:43+00:00
+5,Agregá tus tarjetas Ualá a la wallet de tu celu y pagá acercando tu celu o reloj a la terminal y listo.,positivo,75,85,"entusiasmo,alegría",promocional,"Ualá,tarjetas,wallet,pagá,celu","El tweet promueve una funcionalidad de Ualá de manera positiva, resaltando la facilidad y conveniencia del pago con el celular.",2,0,2,1000,2025-09-19 14:12:21+00:00
+6,"Además, pagando así tenés promos gigantes en: 
+Supermercados 
+Gastronomía 
+ Transporte",positivo,80,95,"entusiasmo,alegría",promocional,"promos,supermercados,gastronomía,transporte","El tweet presenta una oferta con múltiples beneficios, lo que genera un sentimiento positivo y de oportunidad.",0,0,1,1000,2025-09-19 14:14:36+00:00
+7,"Que me parta un rayo si gasté de más este mes.
+El cielo:",negativo,20,85,"frustración,sarcasmo",conversacional,"rayo,gasté,mes,cielo",El tweet expresa frustración y sarcasmo ante la posibilidad de haber gastado de más. La frase 'Que me parta un rayo' es una expresión exagerada indicando negación y presagio de que lo contrario es cierto.,26,4,2,3000,2025-09-19 12:48:14+00:00
+8,"Si a los 15 podés ganar un Emmy 
+también podés empezar a manejar tu plata con #CuentaMenores ",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),19,0,4,6000,2025-09-15 15:31:36+00:00
+9,"Hay gente que está para invertir en 8 billeteras diferentes, seguir el mercado todos los días y leer 20 hilos de X antes de mover un peso
+
+Vos y yo sabemos que vos no.
+
+ Acá te contamos por qué, si no sos esa gente… estás para Ualá ",positivo,70,85,"entusiasmo,alegría",promocional,"Ualá,invertir,mercado,billeteras","El tweet tiene un tono positivo y promocional, sugiriendo que Ualá es una opción accesible para aquellos que no son expertos en inversiones. Se busca generar identificación con el usuario común.",3,0,5,1000,2025-09-13 15:49:25+00:00
+10,"Pagás con el celu, controlás tus gastos y tenés a descuentos en restaurantes, súper, subte y más desde un mismo lugar.",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),0,0,2,1000,2025-09-13 15:49:26+00:00
+11,"Si no estás para andar saltando de app en app ni queres complicarte..
+
+Estás para Ualá",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),0,0,0,1000,2025-09-13 15:49:27+00:00
+12,"Estamos para saber qué opinan 
+Andá votando
+
+¿Te pasa que no estás para hacer filas?",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),2,0,1,1000,2025-09-12 19:26:39+00:00
+13,¿Te pasa que ya no estás para ver 80 videos para entender cómo invertir?,neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),1,0,1,1000,2025-09-12 19:26:40+00:00
+14,"Si todo esto te representa… Estás para dejar de complicarte 
+Estás para Ualá",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),3,0,1,1000,2025-09-12 19:26:40+00:00
+15,"Con Ualá no tenés que elegir entre flan o vigilante 
+Este finde invitá el postre que tenés un 30% de reintegro en gastronomía.",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),6,0,1,2000,2025-09-12 18:23:27+00:00
+16,"Conrad: guardando la carta en la billetera 
+Yo: guardando mi Ualá 
+
+Lo importante va en tu billetera ;)
+#TeamUalá",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),7,0,2,5000,2025-09-11 20:40:41+00:00
+17,"Cosas que me gustan de los jueves:
+- Tiene ese gustito a casi fin de semana
+- 15% de descuento sin tope en 
+carrefour.com.ar",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),4,0,3,1000,2025-09-11 13:57:00+00:00
+18,"Te lo dice Katy, te lo decimos nosotros.
+Estás para Ualá.",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),17,0,2,3000,2025-09-10 21:25:53+00:00
+19,"Compralo, para eso tenés Ualá 
+6 cuotas sin interés en Adidas, Dash, Grid y Seven Sport 
+*En locales adheridos.",positivo,75,85,entusiasmo,promocional,"Ualá,cuotas sin interés,Adidas,Compralo","El tweet es promocional y anima a la compra ofreciendo facilidades de pago, lo que genera un sentimiento positivo.",7,0,2,2000,2025-09-09 21:02:01+00:00
+20,"Cuenta Remunerada Ualá hoy: 45% TNA Plus
+Otros bancos: 0%",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),27,2,5,17000,2025-09-05 17:05:26+00:00
+21,"El más grande a los 37:
+Juega su último partido por eliminatorias en la Selección como campeón del mundo, 8 veces Balón de Oro, 3 veces mejor jugador FIFA, ídolo eterno.",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),10,1,2,2000,2025-09-04 19:02:45+00:00
+22,"El más grande juega su último partido, y yo juego mi último reintegro del mes ",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),6,0,1,2000,2025-09-04 17:03:49+00:00
+23,"Arrancó septiembre y lo bueno se mantiene:
+15% de descuento sin tope en 
+carrefour.com.ar los jueves. Sí, sin tope, nada, ninguno.",positivo,70,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),2,0,4,1000,2025-09-04 12:00:00+00:00
+24,"Si estás para cobrar y que tu plata rinda más, sin fórmulas mágicas.
+Estás para Ualá. Invertí fácil con la seguridad de un banco desde la app ",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),12,1,52,8000,2025-09-03 12:50:48+00:00
+25,"Llega el sueldo y viene con otra buena noticia: ¡subió la tasa de tu cuenta remunerada! 
+Tasa plus: 45% TNA hoy 
+Tasa base: 40% TNA hoy
+
+¿Cómo alcanzar la tasa plus?
+Si sumás $500.000 o más en ciertas inversiones y consumos este mes, en octubre alcanzás la tasa plus, que rinde",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),10,0,10,4000,2025-09-01 15:48:53+00:00
+26,"En la pista puede haber polémica, en tu cuenta no: 45 % TNA sin vueltas con tu tasa plus",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),16,1,6,4000,2025-09-01 14:31:11+00:00
+27,Acordate que la tasa plus rinde +5% sobre la tasa base. Para llegar a ella tenés que alcanzar $500.000 en ciertas operaciones ,neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),1,0,0,2000,2025-09-01 14:31:46+00:00
+28,Cosas para las que estás si tenés Ualá. Abro hilo ,neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),4,0,4,3000,2025-08-29 18:49:04+00:00
+29,"Si estás para dejar de correr a último momento a buscar la billetera... Estás para Ualá. 
+Sumá tus tarjetas a Apple Pay o Google Pay y pagá desde el celu ",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),0,0,1,2000,2025-08-29 18:51:13+00:00
+30,Si estás para comer afuera y tener 30% de reintegro los findes ¡Listo! Estás para Ualá.,neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),0,0,0,2000,2025-08-29 18:52:10+00:00
+31,"Si estás para que tu sueldo te rinda más. Estás para Ualá. 
+Cobrá tu sueldo en Ualá y hacé que tu plata crezca todos los días.",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),0,0,2,1000,2025-08-29 18:49:52+00:00
+32,Si estás para manejar toda tu plata y tus inversiones desde una sola app . Estás para Ualá.,neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),0,0,0,1000,2025-08-29 18:50:29+00:00
+33,Cosas que dan felicidad,neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),1,0,2,2000,2025-08-29 12:53:00+00:00
+34,"La última te lo da Ualá. Los findes 30% de reintegro en todas las cafeterías del país 
+Más info: 
+uala.com.ar/promociones/ga
+…",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),5,0,0,1000,2025-08-29 12:56:56+00:00
+35,"¿Estás para gastar menos en súper, restaurantes, farmacias y hasta en gustitos del kiosko?  Hoy es tu día de suerte ",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),7,0,5,3000,2025-08-28 16:08:48+00:00
+36," En Farmacity, Simplicity y Get The Look tenés 25% de reintegro.",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),3,0,2,2000,2025-08-28 16:12:02+00:00
+37,"Entonces, estás para Ualá  
+ Mirá todas las promos completas acá → 
+uala.com.ar/promos",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),2,0,0,1000,2025-08-28 16:12:59+00:00
+38," En gustitos del kiosko, la rompemos:  Open25 tiene hasta 65% de reintegro si pagás desde el celu.",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),3,0,0,868,2025-08-28 16:12:31+00:00
+39,Ya descubrimos cómo pagó tremendo anillo ,neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),26,0,11,6000,2025-08-27 14:24:37+00:00
+40,"La Tarjeta de Crédito Ualá que es bancaria, pagas en cuotas, la pedís gratis y no pagas costos de mantenimiento = jugada maestra",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),6,0,5,2000,2025-08-27 14:25:19+00:00
+41,Preguntándole a mi tarjeta si puedo sacar ese pasaje ,neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),19,0,8,4000,2025-08-26 13:23:01+00:00
+42," Estás para dejar de tener la plata en mil apps
+ Estás para que no se te caiga más el homebanking
+ Estás para Ualá
+Descargá la app",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),9,1,9,3000,2025-08-25 16:39:54+00:00
+43,Después de aprovechar la suba de la remunerada,neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),44,2,9,5000,2025-08-22 13:45:50+00:00
+44,"¿Cómo hacer que tu plata rinda más sin volverte experto en finanzas?  Con la mejor cuenta remunerada 
+
+Acá va un hilo con data que te suma de verdad ",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),5,1,6,4000,2025-08-21 17:29:32+00:00
+45,¿Querés saber cuánto te falta para llegar? En la app tenés una barra que te lo muestra en tiempo real. Cuando llega al 100%… ,neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),0,0,2,2000,2025-08-21 17:35:20+00:00
+46,"Si llegás en agosto, en septiembre festejás mucho más que el Día de la Primavera 
+De nada ",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),1,0,1,2000,2025-08-21 17:39:03+00:00
+47,¿La nueva moda la billepan? Lo importante es que pagó con la de Ualá y si fue un lunes aprovechó el 15% de reintegro ,neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),14,0,7,5000,2025-08-20 16:55:32+00:00
+48,"-Mi jefe: No te voy a poder dar los días de vacaciones que te pediste
+-Yo entrenando para convertirme en el Guerrero Dragon con las Millas 
+@SmilesOficialAR
+  que canjeé de puntos Ualá+",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),11,0,4,3000,2025-08-19 20:46:43+00:00
+49,"Solo por 48hs, canjeá tus puntos Uala+ por millas Smiles y recibís 160% millas bonus ",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),2,0,2,2000,2025-08-19 20:47:52+00:00

@@ -1,0 +1,226 @@
+tweet_id,text,sentiment,score,confidence,emotions,tone,keywords,explanation,likes,retweets,replies,views,created_at
+0,"Dale la bienvenida a la primavera con estas promociones. 
+Del 19 al 21 de septiembre, 10% OFF en tus lugares favoritos, Ronnie Burger, Occo Helados, Sushi Olazábal, Fulano Café e Integra.
+help.brubank.com/es/collections
+…",positivo,80,95,"alegría,entusiasmo",promocional,"primavera,promociones,10% OFF","El tweet presenta una promoción atractiva para la llegada de la primavera, lo que genera un sentimiento positivo y de entusiasmo.",3,0,3,1000,2025-09-19 14:29:51+00:00
+1,"Ahora podés enviar plata al exterior desde Brubank 
+Simple, rápido y desde la app, usando tu saldo en pesos
+
+ Conversión al instante
+ Disponible 24/7
+ España, Colombia, Paraguay, Chile, Estados Unidos, Uruguay, Bolivia y Venezuela.
+
+Probalo desde Transferencias > Envíos",positivo,85,95,"entusiasmo,alegría",promocional,"enviar plata,Brubank,simple,rápido,exterior","El tweet anuncia una nueva funcionalidad de manera positiva, destacando la facilidad y rapidez del servicio. El tono es promocional y genera entusiasmo.",153,11,22,49000,2025-09-15 19:54:58+00:00
+2,"Volvé a disfrutar el show que transformó el escenario en una puesta teatral increíble. Revivilo las veces que quieras, solo en Flow.",positivo,85,90,"entusiasmo,alegría",promocional,"disfrutar,show,increíble,Flow,teatral","El tweet es claramente positivo y promocional, invitando a disfrutar de un espectáculo calificado como 'increíble'. Utiliza lenguaje persuasivo para generar entusiasmo.",275,10,7,1000000,
+3," ¡En julio, moverte en subte es casi gratis! Pagá con tu Visa Brubank desde el celular y te reintegramos el 90% 
+Cargala en Apple Wallet, Google Pay o MODO y viajá más por menos.
+visa.com.ar/es_ar/promocio
+…",positivo,85,90,"alegría,entusiasmo",promocional,"subte,gratis,Visa Brubank,reintegro,celular",El tweet es mayormente positivo debido a la promoción de viajes en subte casi gratis y la facilidad de pago con reintegro. Genera alegría y entusiasmo por la oportunidad de ahorrar.,9,0,18,3000,2025-07-14 20:07:58+00:00
+4," ¡Este 10 y 11 de julio tenés 20% de reintegro sin tope en shoppings!
+
+Escaneá el QR de MODO desde la app de Brubank y ahorrá en comercios de shoppings adheridos.
+modo.com.ar/promos/irsajul
+…",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),5,0,3,2000,2025-07-10 15:18:45+00:00
+5,"Se viene el aguinaldo… Llevá tu plata al próximo nivel.
+
+En Brubank podés comprar Dólar Oficial, invertir en FCI en pesos o dólares y CEDEARs...
+
+¿Qué estrategia vas a elegir para tu próximo movimiento?",positivo,75,85,"entusiasmo,alegría",promocional,"aguinaldo,dólar,invertir,estrategia",El tweet genera una sensación positiva al asociar el aguinaldo con oportunidades de inversión y crecimiento financiero.,5,0,19,3000,2025-06-17 19:11:01+00:00
+6," ¡Este 12 y 13 de junio tenés 20% de reintegro sin tope en shoppings!
+
+Escaneá el QR de MODO desde la app de Brubank y ahorrá en comercios de shoppings adheridos.
+ Más simple, más ahorro.
+modo.com.ar/promos/irsajun
+…",positivo,85,90,"alegría,entusiasmo",promocional,"reintegro,ahorro,shoppings,Brubank,MODO","El tweet anuncia una promoción con un reintegro, lo que genera un sentimiento positivo al asociarse con ahorro y beneficios económicos.",4,0,6,2000,2025-06-12 15:40:33+00:00
+7,"Hasta el 15 de junio, celebrá el Día del Padre con Brubank 
+Pagando con tu tarjeta de crédito accedés a:
+ 6 cuotas sin interés
+ Hasta 20% de reintegro
+
+En Lázaro, Macowens, Devré, Sweet, Paddle Watch y Parfumerie.
+Solo con Visa crédito Brubank 
+
+ Más info y marcas",positivo,75,90,entusiasmo,promocional,"Día del Padre,Brubank,cuotas sin interés,reintegro,tarjeta de crédito","El tweet es positivo debido a la oferta promocional para el Día del Padre con beneficios como cuotas sin interés y reintegro, generando una sensación de oportunidad y beneficio para el usuario.",4,0,5,3000,2025-06-09 15:58:18+00:00
+8,"Cobrás y en 2 segundos comprás dólares
+En Brubank te garantizamos el mejor precio, sin comisiones y desde la app.
+100% online, los 7 días de la semana.",positivo,80,90,"entusiasmo,alegría",promocional,"dólares,Brubank,mejor precio,sin comisiones","El tweet presenta una oferta atractiva y fácil de usar para comprar dólares, generando un sentimiento positivo debido a la conveniencia y los beneficios ofrecidos.",7,0,10,3000,2025-06-03 20:17:48+00:00
+9,"Tienda Brubank abrió sus puertas para que puedas comprar todo lo que necesitás ( o querés )
+Conocé nuestros productos destacados con precios inmejorables.
+tiendabrubank.com
+
+Aplican términos y condiciones.",positivo,75,85,"alegría,entusiasmo",promocional,"Tienda Brubank,productos destacados,precios inmejorables","El tweet presenta una oferta positiva y atractiva, invitando a comprar con precios ventajosos, lo que genera un sentimiento positivo.",40,2,17,7000,2025-05-30 21:05:00+00:00
+10,"Te presentamos Brubank Pix: La forma más fácil y rápida de pagar tus consumos en Brasil.. 
+Desde la cerveza en la playa hasta el paseo en barco, ahora podés pagar directamente con tus pesos a través de la red Pix, ¡la más popular en Brasil!",positivo,85,90,"alegría,entusiasmo",promocional,"Brubank Pix,Brasil,pagar,fácil,rápida","El tweet promociona un nuevo servicio con un tono optimista y resaltando la facilidad y rapidez para pagar en Brasil, generando un sentimiento positivo.",20,1,6,6000,2025-05-30 19:04:39+00:00
+11,"Este finde ahorrás en Vea
+Del 23 al 25 de mayo, 25% de reintegro con tope de $10.000.
+ Escaneá con la App de Brubank el QR de MODO y listo.  ¡Aprovechá viernes, sábado y domingo!  
+modo.com.ar/promos/vea-may
+…",positivo,75,85,"entusiasmo,alegría",promocional,"ahorrar,reintegro,aprovechá,promos,brubank",El tweet anuncia una promoción con tono positivo y busca generar entusiasmo en el usuario para que aproveche el descuento.,3,1,6,3000,2025-05-23 16:43:40+00:00
+12,"¿Cobraste y empezó el finde largo? No te gastes todo 
+Comprá dólares en Brubank al mejor precio, HOY mismo!
+ Los 7 días de la semana,  incluso feriados.
+ Sin comisiones.
+ 100% desde la app.",positivo,75,85,entusiasmo,promocional,"dólares,Brubank,precio,feriados","El tweet promueve la compra de dólares con Brubank, resaltando beneficios como el mejor precio y disponibilidad continua, lo que genera un sentimiento positivo.",11,2,3,2000,2025-05-01 14:37:07+00:00
+13,"El 1 de mayo TAMBIÉN podés comprar dólares
+Para Brubank NO HAY FERIADOS.
+ Sin comisiones.
+ Mejor cotización del mercado.
+Caja de ahorro en dólares totalmente gratis.",positivo,85,95,"entusiasmo,alegría",promocional,"dólares,Brubank,sin comisiones,mejor cotización","El tweet tiene un tono marcadamente positivo y promocional, resaltando beneficios y ventajas de comprar dólares con Brubank.",5,0,2,2000,2025-04-30 17:22:32+00:00
+14,"¿Tu banco se toma el finde largo? Brubank NO
+
+ Comprá/vendé dólares feriados, sábado y domingo
+ Recibilo al instante
+ Precio garantizado
+ Sin comisiones
+Sin monto mínimo",positivo,85,90,"entusiasmo,alegría",promocional,"Brubank,dólares,feriados,sin comisiones","El tweet promociona Brubank destacando ventajas como operar con dólares en días festivos y sin comisiones, generando un sentimiento positivo.",14,1,0,2000,2025-04-30 14:54:06+00:00
+15,"Brubank se sube a JetSMART y te lleva de viaje 
+
+Aprovechá hasta 30% de descuento en tus pasajes. 
+
+¡Prepárate para descubrir lo mejor de Sudamérica!
+-Pedí tu código en 
+jetsmart.com/ar/es/minisiti
+…
+-Aplicalo al cotizar tu vuelo.
+-Pagá con Brubank y listo.
+
+ No dejes que te lo",positivo,85,90,"entusiasmo,alegría",promocional,"Brubank,JetSMART,descuento,viaje,Sudamérica",El tweet es altamente positivo debido a la promoción de un viaje con descuento y la invitación a descubrir Sudamérica. El tono es claramente promocional y busca generar entusiasmo.,8,1,2,3000,2025-04-29 19:34:35+00:00
+16,"¿Buscás el mejor precio para comprar/vender dólar oficial? Lo encontrás en Brubank
+
+Y te dejo un datito, operamos todos los días. ¡Si el finde largo también!",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),5,0,1,1000,2025-04-29 17:46:38+00:00
+17,"Comprá ahora dólar oficial al mejor precio. ¿Dónde? Como siempre, en Brubank 
+
+Chequeá y sacá tus propias conclusiones.
+Compralo fácil desde la app.
+ Todos los días, sin comisiones y con la mejor cotización del mercado.",positivo,75,85,"entusiasmo,alegría",promocional,"dólar oficial,mejor precio,Brubank,sin comisiones,fácil","El tweet es claramente promocional y busca atraer clientes con la promesa de un buen precio y facilidad de compra, lo que genera un sentimiento positivo.",10,0,1,2000,2025-04-24 15:43:09+00:00
+18,"¿Seguís comprando dólares en otro lado?
+
+En Brubank, te damos el dólar OFICIAL al precio más bajo. Sin comisiones. Sin letra chica. Precio final garantizado.
+
+Comprá dólares en menos de 5 segundos, fácil y desde tu celular. Todos los días.",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),13,1,2,5000,2025-04-23 14:38:34+00:00
+19,"¿Para qué pagar de más?
+ En Brubank comprás dólares a mejor precio que en otros bancos.
+ Todo desde la app, sin restricciones, en 2 segundos.",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),6,0,7,2000,2025-04-22 17:11:53+00:00
+20,"En Brubank el dólar oficial es el  más barato
+Compará y fijate vos mismo.
+ Comprá desde la app, sin vueltas.
+ Al mejor precio siempre, todos los días.",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),89,7,17,11000,2025-04-21 19:02:39+00:00
+21,"¡Hasta 30% OFF en Mostaza con BruBank!
+
+ Con Brubank, 20% OFF los miércoles  con tope de $1000.
+Para clientes BruPlus, 30% OFF todos los días con tope de $2000.
+
+¡Solo girando la ruedita!
+¡No te lo pierdas, aprovechá y disfrutá! 
+
+*Aplica términos y condiciones.",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),4,0,8,3000,2025-01-15 16:44:43+00:00
+22,"Esta semana subte GRATIS con Brubank
+
+A partir de hoy hasta el 19 de enero, apoyando tus tarjetas Brubank o tu celular en el molinete, vas a poder pagar el subte sin contacto y recibir un reintegro.   
+Esta semana acumulá 65% y 35% de reintegro y viajá 100% GRATIS con tu VISA",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),35,3,10,6000,2025-01-13 20:03:44+00:00
+23,"¡Hasta el 20/12, invertí en Netflix, Google, Amazon, Tesla y más con 0% comisiones!  
+Con Brubank, hacé crecer tu plata en las empresas más grandes del mundo.
+
+Invertir nunca fue tan fácil. ¡Probalo ya!
+
+*Aplican términos y condiciones",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),13,0,22,7000,2024-12-17 14:54:57+00:00
+24,"¡Los lunes de diciembre son para ahorrar con Brubank + App YPF!
+Cada lunes, disfrutá un 10% OFF en App YPF pagando con tu tarjeta de débito Brubank.  
+Y si cargás Infinia, ¡te llevás 10% OFF extra!
+
+Cómo aprovechar:
+ Descargá la App de YPF (si no la tenés todavía, ¿qué",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),5,0,5,3000,2024-12-16 17:47:19+00:00
+25,"Invertí tu aguinaldo en Dólar MEP 
+
+Desde la app de Brubank, hacelo en 3 simples pasos:
+ Abrí la app
+ Elegí ""Inversiones"" y seleccioná Dólar MEP
+ Indicá cuánto querés comprar y listo.
+En 24 hs recibís tus dólares en tu caja de ahorro. 
+
+¡Protegé tu aguinaldo hoy mismo!",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),6,0,3,3000,2024-12-16 15:23:26+00:00
+26,"¿Te preguntaste alguna vez cuánto hubieras ganado si invertías tu aguinaldo pasado en Fondos Comunes de Inversión?
+Esta vez, hacé crecer tu plata con los mejores Fondos Comunes de Inversión.
+Elegí entre Renta Fija, Acciones Argentinas y más, ¡y empezá a invertir desde la app!",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),9,0,2,2000,2024-12-16 14:23:29+00:00
+27,"¿Comprás internacionales? Con Brubank, y acá te dejamos un paso a paso para tener en cuenta a la hora de comprar en el exterior. ",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),82,12,24,11000,2024-12-02 22:16:14+00:00
+28,"¡Compra en el mundo con Brubank! 
+Con tu tarjeta de débito o crédito, realizar compras internacionales nunca fue tan fácil.
+Paga en dólares y accede a las mejores plataformas internacionales, ya sea de manera presencial o desde casa.
+Y vos, ¿qué compraste y a dónde te",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),9,2,4,3000,2024-10-25 20:30:00+00:00
+29,"¡La tarjeta de crédito Visa corporativa ya está acá para simplificarte la gestión de tu pyme!
+Abrimos hilo de todo lo que tenés que saber:",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),13,1,2,3000,2024-10-17 19:32:10+00:00
+30, Usá tu tarjeta internacional para pagar todos tus gastos en el exterior sin complicaciones.,neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),1,0,1,2000,2024-10-17 19:32:13+00:00
+31," Con la seguridad que necesita tu pyme: pausá y reactivá tus tarjetas cuando quieras, y asigná un límite mensual a cada tarjeta adicional.",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),1,0,0,2000,2024-10-17 19:32:13+00:00
+32,"¡Se acerca el Día de la Madre! Es el momento ideal para agasajar a esas personas especiales.
+
+Del 14 al 18 de octubre, disfruta de un 30% de reintegro pagando con tu tarjeta Brubank desde Google Pay, Apple Pay o MODO ¡Te devolvemos hasta $25,000 en las mejores marcas!",positivo,85,95,"entusiasmo,alegría",promocional,"Día de la Madre,reintegro,Brubank,marcas",El tweet tiene un sentimiento positivo debido a la promoción de un evento festivo y un descuento atractivo. El lenguaje utilizado es entusiasta y busca generar interés.,4,0,6,3000,2024-10-15 20:58:39+00:00
+33," No te lo podés perder. Vení a Akiabara y disfrutá de un 20% de reintegro al pagar con MODO por QR con tu tarjeta de crédito o débito. 
+Del 10 al 11 de octubre.  ¡Sin tope en el reintegro! 
+modo.com.ar/promos/akiabar
+…",positivo,85,95,"entusiasmo,alegría",promocional,"reintegro,MODO,Akiabara,promoción,QR","El tweet promociona una oferta con un tono entusiasta, invitando a disfrutar de un reintegro, lo cual genera un sentimiento positivo.",0,0,1,2000,2024-10-10 17:40:02+00:00
+34," Les compartimos este artículo que puede serles útiles para resolver sus dudas sobre compras internacionales y pagos en dólares:
+help.brubank.com/es/articles/82
+…
+Tengan en cuenta, que siempre estamos disponibles a través del chat de soporte en nuestra aplicación.",positivo,70,85,"utilidad,ayuda",informativo,"compras internacionales,pagos dólares,soporte,Brubank","El tweet ofrece información útil y soporte, lo que genera un sentimiento positivo al proporcionar soluciones y asistencia a los usuarios.",13,3,18,5000,2024-09-26 18:12:14+00:00
+35,"20% OFF en tus compras, ¡por tiempo limitado!
+
+Este 19 y 20 de septiembre, escaneá el QR de MODO desde la app de Brubank y obtené tu reintegro sin tope en comercios adheridos en shoppings como Palmas del Pilar, Portal Patagonia, Portal Tucumán, ¡y más!
+
+¿Cómo?
+ Desde la app",positivo,85,95,"alegría,entusiasmo",promocional,"20% OFF,reintegro,Brubank,promoción,MODO","El tweet ofrece un descuento significativo, lo que genera un sentimiento positivo. El lenguaje utilizado es promocional y busca generar entusiasmo.",6,0,6,3000,2024-09-19 21:04:28+00:00
+36,"Protegé a tus hijos menores de las apuestas online
+¿Cómo? Con Control Familiar la nueva herramienta de Brubank diseñada para que madres, padres y tutores puedan supervisar en tiempo real los movimientos de las cuentas de los menores
+Abro hilo con todo lo que tenes que saber",positivo,75,85,"alivio,seguridad",informativo,"apuestas online,control familiar,Brubank,hijos menores","El tweet promueve una herramienta para proteger a los niños, lo que genera un sentimiento positivo asociado a la seguridad y el alivio.",25,8,7,4000,2024-09-16 21:29:45+00:00
+37," Supervisá los movimientos y gastos en tiempo real
+ Detectá señales de alerta
+ Fomentá el diálogo familiar
+Con Control Familiar, podrás anticiparte a cualquier señal de alarma.",positivo,85,90,"seguridad,tranquilidad",promocional,"control familiar,gastos,alerta,diálogo",El tweet promueve una herramienta para mejorar la gestión familiar con un tono positivo y enfocado en la seguridad y prevención.,5,0,1,2000,2024-09-16 21:29:46+00:00
+38,"¡Se viene el Día de las Infancias! Llegá preparado.
+
+Disfrutá de hasta 4 cuotas sin interés con tu tarjeta de débito Visa Brubank del 6 al 18 de agosto. 
+
+Conocé los comercios adheridos a GOcuotas: 
+gocuotas.com/dia_de_la_ninez",positivo,75,85,"alegría,entusiasmo",promocional,"Día de las Infancias,cuotas sin interés,Brubank,Visa","El tweet anuncia un evento positivo y ofrece beneficios, generando un sentimiento general positivo asociado a la promoción.",5,0,12,2000,2024-08-06 20:24:31+00:00
+39,"Que levante la mano el #TeamCalor  Disfrutá de tu viaje con el acompañamiento de Pax Assistance, con planes que se adaptan a los lugares, los días y las actividades que hagas. 
+
+Te acercamos nuestras preguntas frecuentes  para que puedas conocer más información:",positivo,75,85,"entusiasmo,alegría",promocional,"TeamCalor,viaje,Pax Assistance,planes","El tweet tiene un tono positivo y promocional, invitando a disfrutar del viaje y resaltando los beneficios de Pax Assistance. La mención de '#TeamCalor' y el uso de la palabra 'Disfrutá' contribuyen a la positividad.",5,0,6,2000,2024-07-25 21:07:51+00:00
+40,"Estamos las 24 horas, los 7 días de la semana
+
+Hoy todos los consumos que hagas  mayores a $10.000, participan para poder ganarte hasta $200.000
+
+También podés invertir en las empresas más importantes del mundo sin pagar comisiones. Ingresá desde la sección Inversiones >",positivo,75,85,"entusiasmo,alegría",promocional,"consumos,ganarte,inversiones,comisiones","El tweet ofrece promociones y oportunidades de ganar dinero e invertir, lo que genera un sentimiento positivo general.",10,2,12,3000,2024-07-24 17:50:39+00:00
+41,"¡Aprovecha este beneficio! Los días viernes 19 y viernes 26 de Julio paga con tu QR a través de Brubank en los comercios de Shoppings adheridos y te reintegramos el 20% sin tope.
+
+Para más información, consulta los comercios adheridos: 
+help.brubank.com/es/articles/96
+…",positivo,85,95,entusiasmo,promocional,"beneficio,reintegro,Brubank,QR,Shoppings","El tweet promueve un beneficio con un tono entusiasta, ofreciendo un reintegro significativo. La palabra 'aprovecha' refuerza el sentimiento positivo.",8,0,5,2000,2024-07-19 17:26:45+00:00
+42,"AVISO IMPORTANTE 
+Hoy Brubank opera con total normalidad. 
+Tu banco 24/7",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),65,5,10,6000,2024-07-19 17:13:52+00:00
+43,"Eu, ¿te venís perdiendo de todos los reintegros de Brubank?
+
+Te explicamos cómo hacer para aprovechar todas nuestras promos, seguí los pasos, girá la ruedita en el día de la promo y ahorrá con Brubank.
+
+Si tenés alguna pregunta sobre la ruedita, te compartimos nuestras",positivo,75,85,"entusiasmo,alegría",promocional,"reintegros,Brubank,promos,ahorrá","El tweet promueve beneficios y ahorros, lo que sugiere un sentimiento positivo. El uso de la palabra 'aprovechar' también contribuye a esta positividad.",9,1,7,3000,2024-07-18 20:18:49+00:00
+44,"Salí de tu casa sin tu billetera, posta no la necesitás. Con Brubank, ahora escaneás cualquier QR y podés pagar con tarjeta de crédito.
+
+Salís, escaneás y pagás ",positivo,85,90,"alegría,entusiasmo",promocional,"Brubank,QR,pagar,tarjeta de crédito","El tweet promueve una funcionalidad que facilita los pagos, generando un sentimiento positivo y de conveniencia.",17,4,6,3000,2024-07-15 21:00:01+00:00
+45,"Tenemos nueva funcionalidad 
+
+Ahora, podés pagar por tus consumos internacionales directamente con tus dólares. Antes de hacer tu compra, elegí si querés pagar en dólares o pesos.
+
+Configuralo desde la app y cambialo las veces que quieras. ",positivo,80,95,"entusiasmo,alegría",promocional,"dólares,pagar,internacionales,app,compra","El tweet anuncia una nueva funcionalidad beneficiosa, ofreciendo mayor flexibilidad y control a los usuarios, lo que genera un sentimiento positivo.",110,8,82,16000,2024-07-04 21:35:29+00:00
+46,"Hoy salí de la oficina y andá derechito por un “cafecitoooooo” porque tenés un 20% OFF en la Panera Rosa pagando con tu tarjeta de débito Brubank . 
+
+Tope de reintegro: $1.000.",positivo,85,90,"entusiasmo,alegría",promocional,"cafecito,20% OFF,Brubank,Panera Rosa","El tweet promociona una oferta, lo que genera un sentimiento positivo y de entusiasmo hacia la posibilidad de obtener un descuento.",5,1,31,11000,2024-02-21 18:09:34+00:00
+47,"Arrancá el finde con las compras que necesitás. Hoy, 20% OFF en Farmacity pagando con tu tarjeta de débito Brubank. 
+
+Tope de reintegro: $1.000.",positivo,75,85,"alegría,entusiasmo",promocional,"Farmacity,Brubank,descuento,oferta,compras","El tweet anuncia una oferta, lo cual generalmente genera un sentimiento positivo en los usuarios. El lenguaje utilizado es promocional y busca incentivar las compras.",6,0,25,9000,2024-02-16 14:38:29+00:00
+48,"El 14 de febrero es para festejar el amor ,.. ¡De la forma que quieras! 
+
+Aprovecha hoy todas las promos que tenés con tu tarjeta de débito Brubank y enamórate una y mil veces más de comer rico. Chequeá las promos en el hilo ",positivo,85,90,"alegría,entusiasmo",promocional,"amor,promos,Brubank,comer rico","El tweet tiene un tono positivo y alegre, promoviendo la celebración del amor y el uso de la tarjeta Brubank para disfrutar de promociones relacionadas con la comida. El lenguaje utilizado es muy optimista.",6,0,16,7000,2024-02-14 21:36:48+00:00
+49,"Venís queriéndote hacer algo. Cortarte el pelo, teñirte, rebajarte, algo… 
+
+Con tu tarjeta de débito Brubank tenés un 70% OFF en Cerini para que no lo pienses más. 
+
+Tope de reintegro: $7.000.",neutral,50,40,,neutral,,Análisis básico por palabras clave (Gemini no disponible),7,1,29,6000,2024-02-09 11:39:30+00:00

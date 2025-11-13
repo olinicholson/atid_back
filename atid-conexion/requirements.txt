@@ -2,6 +2,8 @@ fastapi==0.100.0
 uvicorn[standard]==0.22.0
 pydantic==1.10.12
 python-dateutil==2.8.2
+python-dotenv==1.0.0
+google-generativeai
 # Optional for model loading; keep pinned but not strictly required for heuristic
 pandas==2.2.3
 scikit-learn==1.3.2

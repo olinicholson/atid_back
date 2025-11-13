@@ -2,13 +2,40 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 import os
 import pickle
 import random
 import math
 import json
+
+# Importar función de análisis de sentimiento de Gemini
+from app.sentiment_analyzer import analyze_sentiment_gemini, analyze_csv_sentiment, get_sentiment_summary
+
+# Load environment variables
+from dotenv import load_dotenv
+load_dotenv()
+
+# Google Gemini for optimization tips (FREE!)
+GEMINI_MODEL = None
+GEMINI_AVAILABLE = False
+
+try:
+    import google.generativeai as genai
+    
+    gemini_key = os.getenv("GOOGLE_API_KEY")
+    if gemini_key and len(gemini_key) > 20:
+        genai.configure(api_key=gemini_key)
+        # Usar gemini-2.5-flash-lite (modelo Pro)
+        GEMINI_MODEL = genai.GenerativeModel('gemini-2.5-flash-lite')
+        GEMINI_AVAILABLE = True
+        print(f"[startup] ✅ Google Gemini (2.5-flash-lite) initialized successfully")
+    else:
+        GEMINI_AVAILABLE = False
+        print(f"[startup] ⚠️  Google API key not configured")
+except Exception as e:
+    print(f"[startup] ⚠️  Gemini initialization failed: {e}")
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 # Make repository root importable so we can import the predictor wrapper module
@@ -259,8 +286,23 @@ def predict_tweet(payload: TweetRequest):
         # Extract jump probability and classification from wrapper response
         is_jump_prob = pred.get("is_jump_prob", {})
         is_jump = pred.get("is_jump", {})
+        
+        # Calculate jump_intensity from predicted metrics (same formula as training)
+        # jump_intensity = 0.7*views + 0.15*likes + 0.15*replies
+        jump_intensity = (
+            0.7 * views.get("q50", 0) + 
+            0.15 * likes.get("q50", 0) + 
+            0.15 * replies.get("q50", 0)
+        )
+        
+        # Determine is_viral based on views threshold (p70)
+        # Using a conservative threshold of 4500 views (aproximado p70 del dataset)
+        is_viral = views.get("q50", 0) > 4500
 
         return JSONResponse(content={
+            "predictions": preds,  # Include full prediction structure with quantiles
+            "jump_intensity": float(jump_intensity),
+            "is_viral": bool(is_viral),
             "metrics": {
                 "likes": likes.get("q50", 0),
                 "replies": replies.get("q50", 0),
@@ -335,3 +377,335 @@ def predict_tweet_demo():
         "note": "demo-response"
     }
     return JSONResponse(content=sample)
+
+
+class OptimizationRequest(BaseModel):
+    text: str = Field(..., description="Tweet text to optimize")
+    predictions: Dict[str, Any] = Field(..., description="Prediction results from /predict_tweet")
+
+
+@app.post("/get_optimization_tips")
+async def get_optimization_tips(request: OptimizationRequest):
+    """Generate personalized optimization tips using AI (Gemini) based on tweet text and predictions."""
+    # Extract key metrics from predictions
+    likes = request.predictions.get("metrics", {}).get("likes", 0)
+    comments = request.predictions.get("metrics", {}).get("comments", 0)
+    views = request.predictions.get("metrics", {}).get("views", 0)
+    engagement_rate = request.predictions.get("engagementRate", 0)
+    jump_prob = request.predictions.get("jumpProbability", 0)
+
+    # Build context for AI
+    prompt = f"""
+Eres un experto en marketing de redes sociales especializado en Twitter/X. Analiza el siguiente tweet y sus métricas predichas para generar consejos de optimización.
+
+Tweet: "{request.text}"
+
+Métricas Predichas:
+- Likes esperados: {likes}
+- Comentarios esperados: {comments}
+- Visualizaciones esperadas: {views}
+- Tasa de engagement: {engagement_rate}%
+- Probabilidad de viralización: {jump_prob*100:.0f}%
+
+Genera exactamente 4 consejos concretos y accionables para mejorar el rendimiento del tweet. Los consejos pueden ser sobre:
+- El texto (tono, claridad, llamado a la acción, creatividad, etc.)
+- El horario o día recomendado para publicar
+- Temas relevantes, tendencias o hashtags actuales
+- Cualquier otro aspecto que ayude a aumentar el engagement o viralidad
+
+Además, si puedes, sugiere una versión mejorada del tweet (máximo 1 frase, opcional).
+
+Responde SOLO con un JSON así:
+{{
+    "tips": ["Consejo 1", "Consejo 2", "Consejo 3", "Consejo 4"],
+    "mejora": "Tweet mejorado (opcional, puede estar vacío si no hay sugerencia)"
+}}
+"""
+
+    if GEMINI_AVAILABLE and GEMINI_MODEL:
+        try:
+            response = GEMINI_MODEL.generate_content(prompt)
+            content = response.text.strip()
+            # Gemini might wrap JSON in markdown code blocks
+            if content.startswith("```"):
+                content = content.split("```")[1]
+                if content.startswith("json"):
+                    content = content[4:].strip()
+            result = json.loads(content)
+            if isinstance(result, dict) and "tips" in result and isinstance(result["tips"], list):
+                return JSONResponse(content={
+                    "tips": result["tips"][:4],
+                    "mejora": result.get("mejora", ""),
+                    "source": "gemini"
+                })
+        except Exception as e:
+            print(f"[get_optimization_tips] Gemini error: {e}")
+    # Fallback: generic tips
+    return JSONResponse(content={
+        "tips": [
+            "Añade una pregunta para aumentar el engagement",
+            "Incluye una llamada a la acción",
+            "Agrega hashtags relevantes para aumentar el alcance",
+            "Considera acortar tu mensaje para mejorar la legibilidad"
+        ],
+        "mejora": "",
+        "source": "fallback"
+    })
+
+
+class SentimentRequest(BaseModel):
+    text: str = Field(..., example="¡Me encanta este producto! Es excelente 🎉")
+
+
+# Batch y CSV request para análisis de sentimiento
+from typing import List
+
+class SentimentBatchRequest(BaseModel):
+    texts: List[str] = Field(..., description="Lista de textos a analizar")
+
+class SentimentCSVRequest(BaseModel):
+    csv_name: str = Field(..., description="Nombre del archivo CSV en core/data/")
+    limit: int = Field(1000, description="Máximo de filas a analizar")
+    force_reanalyze: bool = Field(False, description="Forzar reanálisis aunque exista caché")
+
+class BiasDetectionRequest(BaseModel):
+    text: str = Field(..., description="Tweet text to analyze for bias")
+
+@app.post("/detect_bias")
+def detect_bias(request: BiasDetectionRequest):
+    """Detect potential biases in tweet text using Gemini AI."""
+    prompt = f"""
+Eres un experto en análisis de contenido, reputación de marca y detección de sesgos en redes sociales. Ponte en el lugar del equipo de comunicación de una empresa fintech como Ualá, que cuida especialmente su imagen pública y la inclusión.
+
+Analiza el siguiente texto de Twitter/X considerando no solo palabras explícitas, sino también el contexto general, el tono, las sutilezas, dobles sentidos, ironía, generalizaciones, implicancias reputacionales y posibles riesgos para la marca.
+
+Texto a analizar: "{request.text}"
+
+Analiza el texto buscando los siguientes tipos de sesgos:
+1. **Sesgo de género**: Lenguaje no inclusivo, estereotipos de género, uso genérico masculino
+2. **Sesgo racial/étnico**: Términos problemáticos, generalizaciones, estereotipos
+3. **Sesgo político**: Lenguaje partidista excesivo, polarización
+4. **Sesgo de edad**: Ageismo, generalizaciones generacionales
+5. **Sesgo socioeconómico**: Clasismo, lenguaje excluyente, suposiciones sobre recursos
+
+Además, evalúa el **tono** del mensaje: neutral, agresivo, condescendiente, sarcástico, irónico, etc.
+
+Si detectas algún riesgo reputacional, sesgo sutil, ironía, o algo que podría ser problemático para una empresa como Ualá, menciónalo.
+
+Responde SOLO con un objeto JSON con la siguiente estructura exacta:
+{{
+    "has_bias": true,
+    "bias_score": 0,
+    "detected_biases": [],
+    "tone": "neutral",
+    "overall_assessment": ""
+}}
+"""
+    if GEMINI_AVAILABLE and GEMINI_MODEL:
+        try:
+            response = GEMINI_MODEL.generate_content(prompt)
+            content = response.text.strip()
+            if content.startswith("```"):
+                content = content.split("```")[1]
+                if content.startswith("json"):
+                    content = content[4:].strip()
+            result = json.loads(content)
+            # Adaptar la respuesta de Gemini a formato estructurado para el frontend
+            if isinstance(result, dict) and "has_bias" in result:
+                # Si Gemini ya devuelve detected_biases como lista de objetos, usarla
+                detected_biases = result.get("detected_biases", [])
+                # Si es lista de strings, mapearlas a objetos
+                if detected_biases and isinstance(detected_biases[0], str):
+                    # Heurística: asignar tipo por palabra clave en string
+                    def guess_type(s):
+                        s = s.lower()
+                        if "género" in s: return "Género"
+                        if "racial" in s or "étnico" in s: return "Racial"
+                        if "polític" in s: return "Político"
+                        if "edad" in s: return "Edad"
+                        if "socioecon" in s: return "Socioeconómico"
+                        return "Otro"
+                    detected_biases = [{
+                        "type": guess_type(b),
+                        "severity": "alto",
+                        "explanation": b,
+                        "suggestion": "Considere reformular con lenguaje más neutral"
+                    } for b in detected_biases]
+                # Calcular score por categoría
+                categories = ["Género", "Racial", "Político", "Edad", "Socioeconómico"]
+                category_scores = {cat: 0 for cat in categories}
+                for b in detected_biases:
+                    t = b.get("type")
+                    if t in category_scores:
+                        category_scores[t] = max(category_scores[t], 100 if b.get("severity") == "alto" else 66 if b.get("severity") == "medio" else 33)
+                # El bias_score general es el máximo de las categorías
+                bias_score = max(category_scores.values()) if category_scores else (result.get("bias_score") or 0)
+                return JSONResponse(content={
+                    "has_bias": result.get("has_bias", False),
+                    "bias_score": bias_score,
+                    "detected_biases": detected_biases,
+                    "tone": result.get("tone", "neutral"),
+                    "overall_assessment": result.get("overall_assessment", ""),
+                    "category_scores": category_scores
+                })
+        except Exception as e:
+            print(f"[detect_bias] Gemini error: {e}")
+
+    # Fallback: static keyword-based bias/toxicity detection
+    text = request.text.lower()
+    # Offensive/biased word lists (expand as needed)
+    bias_keywords = {
+        "Sesgo de género": ["puto", "puta", "maricón", "zorra", "feminazi", "machista", "nena", "nenito", "hombrecito", "mujercita"],
+        "Sesgo racial/étnico": ["negro", "india", "judío", "gitano", "sudaca", "chino de mierda", "grone", "cabecita", "bolita"],
+        "Sesgo político": ["zurdo", "facho", "kuka", "macrista", "peroncho", "gorila"],
+        "Sesgo de edad": ["viejo de mierda", "pendejo", "anciano inútil", "boomer"],
+        "Sesgo socioeconómico": ["villero", "planero", "cheto", "negro de mierda", "pobre de mierda"]
+    }
+    detected = []
+    for bias_type, keywords in bias_keywords.items():
+        for kw in keywords:
+            if kw in text:
+                detected.append({
+                    "type": bias_type,
+                    "severity": "alto",  # Palabra ofensiva = severidad alta
+                    "explanation": f"Se detectó la palabra ofensiva '{kw}' asociada a {bias_type.lower()}.",
+                    "suggestion": "Considere reformular con lenguaje más neutral"
+                })
+
+    has_bias = len(detected) > 0
+    bias_score = 100 if has_bias else 0
+    tone = "agresivo" if has_bias else "neutral"
+    assessment = "Se detectaron posibles sesgos/toxicidad." if has_bias else "Sin sesgos detectados."
+
+    return JSONResponse(content={
+        "has_bias": has_bias,
+        "bias_score": bias_score,
+        "detected_biases": detected,
+        "tone": tone,
+        "overall_assessment": assessment
+    })
+
+
+@app.post("/analyze_sentiment_batch")
+def analyze_sentiment_batch(payload: SentimentBatchRequest):
+    """
+    # ...existing code for Gemini call and response handling...
+    Analiza el sentimiento de múltiples textos.
+    """
+    if not payload.texts or len(payload.texts) == 0:
+        raise HTTPException(status_code=400, detail="La lista de textos no puede estar vacía")
+    
+    if len(payload.texts) > 100:
+        raise HTTPException(status_code=400, detail="Máximo 100 textos por solicitud")
+    
+    try:
+        results = []
+        for idx, text in enumerate(payload.texts):
+            if text and text.strip():
+                analysis = analyze_sentiment_gemini(text)
+                analysis['index'] = idx
+                analysis['text'] = text
+                results.append(analysis)
+        
+        # Calcular resumen
+        if results:
+            sentiment_counts = {}
+            total_score = 0
+            for r in results:
+                sent = r['sentiment']
+                sentiment_counts[sent] = sentiment_counts.get(sent, 0) + 1
+                total_score += r['score']
+            
+            summary = {
+                "total_analyzed": len(results),
+                "sentiment_distribution": sentiment_counts,
+                "average_score": round(total_score / len(results), 2)
+            }
+        else:
+            summary = {}
+        
+        return JSONResponse(content={
+            "results": results,
+            "summary": summary
+        })
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al analizar sentimientos: {str(e)}")
+
+
+@app.post("/analyze_sentiment_csv")
+def analyze_sentiment_csv(payload: SentimentCSVRequest):
+    """
+    Analiza el sentimiento de todos los tweets en un CSV.
+    
+    CSV debe estar en: atid_back/core/data/
+    
+    Returns:
+        - tweets: lista de tweets con análisis de sentimiento
+        - summary: estadísticas resumidas
+    """
+    # Construir ruta al CSV
+    csv_path = os.path.abspath(
+        os.path.join(BASE_DIR, "..", "core", "data", payload.csv_name)
+    )
+    
+    if not os.path.exists(csv_path):
+        raise HTTPException(
+            status_code=404, 
+            detail=f"CSV no encontrado: {payload.csv_name}. Debe estar en core/data/"
+        )
+    
+    try:
+        # Analizar CSV (con caché inteligente)
+        df_results = analyze_csv_sentiment(
+            csv_path, 
+            limit=payload.limit, 
+            force_reanalyze=payload.force_reanalyze
+        )
+        
+        # Generar resumen
+        summary = get_sentiment_summary(df_results)
+        
+        # Limpiar NaN, inf, -inf y convertir fechas a string
+        df_results = df_results.replace([float('inf'), float('-inf')], 0)
+        df_results = df_results.fillna(0)
+        if 'created_at' in df_results.columns:
+            df_results['created_at'] = df_results['created_at'].astype(str)
+        tweets = df_results.to_dict('records')
+        
+        return JSONResponse(content={
+            "tweets": tweets,
+            "summary": summary,
+            "csv_analyzed": payload.csv_name,
+            "total_tweets": len(tweets)
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error al analizar CSV: {str(e)}")
+
+
+@app.get("/sentiment_summary/{csv_name}")
+def get_sentiment_summary_endpoint(csv_name: str, limit: Optional[int] = None):
+    """
+    Obtiene solo el resumen estadístico del análisis de sentimiento de un CSV.
+    Útil para preview rápido sin analizar todos los tweets.
+    """
+    csv_path = os.path.abspath(
+        os.path.join(BASE_DIR, "..", "core", "data", csv_name)
+    )
+    
+    if not os.path.exists(csv_path):
+        raise HTTPException(status_code=404, detail=f"CSV no encontrado: {csv_name}")
+    
+    try:
+        # Analizar solo un subset para resumen rápido
+        df_results = analyze_csv_sentiment(csv_path, limit=limit or 20)
+        summary = get_sentiment_summary(df_results)
+        
+        return JSONResponse(content={
+            "summary": summary,
+            "csv_name": csv_name,
+            "sample_size": len(df_results)
+        })
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")

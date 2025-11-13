@@ -189,10 +189,9 @@ for idx, target in enumerate(TARGETS):
     # Métricas
     mae = np.mean(np.abs(y_val - y_pred))
     
-    from sklearn.metrics import f1_score, precision_score, recall_score
-    f1 = f1_score(j_val, is_jump_pred, zero_division=0)
-    prec = precision_score(j_val, is_jump_pred, zero_division=0)
-    rec = recall_score(j_val, is_jump_pred, zero_division=0)
+
+    from sklearn.metrics import r2_score
+    r2 = r2_score(y_val, y_pred)
     
     # ===== GRÁFICO =====
     ax = axes[idx]
@@ -215,7 +214,7 @@ for idx, target in enumerate(TARGETS):
     
     # Título y etiquetas
     ax.set_title(f'{target.upper()} - FFN Multitarea Two-Stage\n' + 
-                 f'MAE: {mae:.2f} | F1: {f1:.3f} (P={prec:.2f}, R={rec:.2f}) | Coverage 95%: {coverage*100:.1f}% | Threshold: {thresh_opt:.2f}',
+                 f'MAE: {mae:.2f} | R2: {r2:.3f} | Coverage 95%: {coverage*100:.1f}% | Threshold: {thresh_opt:.2f}',
                  fontsize=13, fontweight='bold', pad=10)
     ax.set_xlabel('Muestra de Validación', fontsize=11)
     ax.set_ylabel(target.capitalize(), fontsize=11)
@@ -225,7 +224,7 @@ for idx, target in enumerate(TARGETS):
     # Línea promedio
     ax.axhline(y=np.mean(y_val), color='gray', linestyle='--', alpha=0.3, linewidth=1, label='Media')
     
-    print(f"   MAE: {mae:.2f} | F1: {f1:.3f} (P={prec:.2f}, R={rec:.2f}) | Coverage: {coverage*100:.1f}% | Picos: {len(jump_indices_real)} | TP: {len(tp_indices)} | FP: {len(fp_indices)}")
+    print(f"   MAE: {mae:.2f} | R2: {r2:.3f} | Coverage: {coverage*100:.1f}% | Picos: {len(jump_indices_real)} | TP: {len(tp_indices)} | FP: {len(fp_indices)}")
 
 plt.suptitle('🚀 Engagement EMMA - Predicción FFN Multitarea (Two-Stage + Calibración)', 
              fontsize=16, fontweight='bold', y=0.995)
